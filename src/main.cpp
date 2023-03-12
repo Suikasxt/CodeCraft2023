@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <cassert>
 #include <ctime>
+#include <cstring>
 #include <algorithm>
 #include "main.h"
 
@@ -87,6 +88,8 @@ void stateOutput(){
 }
 
 void work(){
+    int buy_expect[100] = {};
+    int sell_expect[100] = {};
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         robot->update();
     }
@@ -97,6 +100,12 @@ void work(){
             if (((MATERIAL[studio->type]^studio->item)>>i)&1){
                 item_require[i]++;
             }
+        }
+    }
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        for (int i = 1; i <= 7; i++){
+            if ((robot->item>>i)&1)
+            item_require[i]--;
         }
     }
 
@@ -112,7 +121,7 @@ void work(){
                 }
                 for (int j = 0; j < studio_dict[i].size() && robot->item; j++){
                     Studio* studio = studio_dict[i][j];
-                    if (studio->item & robot->item){
+                    if ((studio->item | sell_expect[studio->id]) & robot->item){
                         continue;
                     }
                     double dist_tmp = abs2(robot->position - studio->position);
@@ -123,12 +132,13 @@ void work(){
                 }
                 if (target){
                     robot->dispatch(Task::SELL, target);
+                    sell_expect[target->id] ^= robot->item;
                     break;
                 }
             }
         }else{
             for (int i = 7; i > 0; i--){
-                if (item_require[i] <= 1){
+                if (item_require[i] <= 0){
                     continue;
                 }
 
@@ -136,7 +146,7 @@ void work(){
                 Studio* target = NULL;
                 for (int j = 0; j < studio_dict[i].size() && (!robot->item); j++){
                     Studio* studio = studio_dict[i][j];
-                    if (!studio->finish){
+                    if (studio->finish==0 || buy_expect[studio->id]==1){
                         continue;
                     }
                     double dist_tmp = abs2(robot->position - studio->position);
@@ -147,6 +157,8 @@ void work(){
                 }
                 if (target){
                     robot->dispatch(Task::BUY, target);
+                    buy_expect[target->id] = 1;
+                    item_require[i]--;
                     break;
                 }
             }

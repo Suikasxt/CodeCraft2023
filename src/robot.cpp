@@ -29,7 +29,14 @@ void Robot::outputToString(char output[]){
 void Robot::goToTargetStudio(){
     Point delta = target->position - position;
     double target_angle = atan2(delta.y, delta.x);
-    angle_v = (target_angle - angle) * 5;
+    double angle_delta = target_angle - angle;
+    if (angle_delta > M_PI){
+        angle_delta -= M_PI*2;
+    }
+    if (angle_delta < -M_PI){
+        angle_delta += M_PI*2;
+    }
+    angle_v = angle_delta * 6;
 
     if (angle_v > M_PI){
         angle_v = M_PI;
@@ -41,9 +48,10 @@ void Robot::goToTargetStudio(){
     printf("rotate %d %lf\n", id, angle_v);
 
     double v = 0;
-    if (abs(angle_v) < 1){
+    if (abs(angle_delta) < 1.5){
         v = 6;
     }
+
     velocity = Point(cos(angle), sin(angle))*v;
     printf("forward %d %lf\n", id, v);
 }
@@ -63,7 +71,7 @@ void Robot::buy(){
 #endif
         return;
     }
-    if (studio_id == 0){
+    if (studio_id == -1){
 #ifdef DEBUG_MODE
         fprintf(warning_output, "[WARNING] Robot %d try to buy without studio nearby!\n", id);
 #endif
@@ -94,7 +102,7 @@ void Robot::sell(){
 #endif
         return;
     }
-    if (studio_id == 0){
+    if (studio_id == -1){
 #ifdef DEBUG_MODE
         fprintf(warning_output, "[WARNING] Robot %d try to sell without studio nearby!\n", id);
 #endif
