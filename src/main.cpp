@@ -113,9 +113,9 @@ void work(){
         robot->task_now = Task::NONE;
 
         if (robot->item){
+            double dist = INF;
+            Studio* target = NULL;
             for (int i = 0; i < 10; i++){
-                double dist = INF;
-                Studio* target = NULL;
                 if ((MATERIAL[i]&robot->item) == 0){
                     continue;
                 }
@@ -130,20 +130,19 @@ void work(){
                         dist = dist_tmp;
                     }
                 }
-                if (target){
-                    robot->dispatch(Task::SELL, target);
-                    sell_expect[target->id] ^= robot->item;
-                    break;
-                }
+            }
+            if (target){
+                robot->dispatch(Task::SELL, target);
+                sell_expect[target->id] ^= robot->item;
             }
         }else{
+            double dist = INF;
+            Studio* target = NULL;
             for (int i = 7; i > 0; i--){
                 if (item_require[i] <= 0){
                     continue;
                 }
 
-                double dist = INF;
-                Studio* target = NULL;
                 for (int j = 0; j < studio_dict[i].size() && (!robot->item); j++){
                     Studio* studio = studio_dict[i][j];
                     if (studio->finish==0 || buy_expect[studio->id]==1){
@@ -155,15 +154,13 @@ void work(){
                         dist = dist_tmp;
                     }
                 }
-                if (target){
-                    robot->dispatch(Task::BUY, target);
-                    buy_expect[target->id] = 1;
-                    item_require[i]--;
-                    break;
-                }
+            }
+            if (target){
+                robot->dispatch(Task::BUY, target);
+                buy_expect[target->id] = 1;
+                item_require[target->type]--;
             }
         }
-        //break;
     }
 }
 
