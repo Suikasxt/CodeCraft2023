@@ -158,15 +158,12 @@ void Robot::update(){
     }
 }
 
-void Robot::dispatch(Task _task, Studio* _target){
-    if (task_now != Task::NONE){
-#ifdef DEBUG_MODE
-        fprintf(warning_output, "[WARNING] Robot %d is 007 now!\n", id);
-#endif
-        return;
+void Robot::dispatch(Studio* _target){
+    if (item){
+        task_now = Task::SELL;
+    }else{
+        task_now = Task::BUY;
     }
-
-    task_now = _task;
     target = _target;
     goToTargetStudio();
 }

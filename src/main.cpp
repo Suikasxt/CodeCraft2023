@@ -91,6 +91,7 @@ void stateOutput(){
 void work(){
     int buy_expect[52] = {};
     int sell_expect[52][10] = {};
+    vector<pair<double, pair<Robot*, Studio*> > > work_list;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         robot->update();
     }
@@ -112,68 +113,49 @@ void work(){
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         robot->task_now = Task::NONE;
-        //robot->stop();
-
+        for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
+            double dist = abs(robot->position - studio->position) + robot->id*1000;
+            work_list.push_back(make_pair(dist, make_pair(&(*robot), &(*studio))));
+        }
+    }
+    sort(work_list.begin(), work_list.end());
+    for (auto work = work_list.begin(); work != work_list.end(); work++){
+        Robot* robot = work->second.first;
+        Studio* studio = work->second.second;
+        if (robot->task_now != Task::NONE){
+            continue;
+        }
         if (robot->item){
             int item_id = 0;
             for (int x=(robot->item>>1); x; x>>=1) item_id++;
-            double dist = INF;
-            Studio* target = NULL;
-            for (int i = 0; i < 10; i++){
-                if ((MATERIAL[i]&robot->item) == 0){
-                    continue;
-                }
-                for (int j = 0; j < studio_dict[i].size() && robot->item; j++){
-                    Studio* studio = studio_dict[i][j];
-                    double dist_tmp = abs(robot->position - studio->position);
-
-                    int space_left = (studio->item&robot->item) == 0;
-                    space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist_tmp/6*FRAME_PRE_SEC);
-                    space_left -= sell_expect[studio->id][item_id];
-                    if (space_left <= 0){
-                        continue;
-                    }
-                    if (dist_tmp < dist){
-                        target = studio;
-                        dist = dist_tmp;
-                    }
-                }
+            if ((MATERIAL[studio->type]&robot->item) == 0){
+                continue;
             }
-            if (target){
-                robot->dispatch(Task::SELL, target);
-                sell_expect[target->id][item_id]++;
+            double dist = abs(robot->position - studio->position);
+
+            int space_left = (studio->item&robot->item) == 0;
+            space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
+            space_left -= sell_expect[studio->id][item_id];
+            if (space_left > 0){
+                robot->dispatch(studio);
+                sell_expect[studio->id][item_id]++;
             }
         }else{
-            double dist = INF;
-            Studio* target = NULL;
-            for (int i = 7; i > 0; i--){
-                if (item_require[i] <= 0){
-                    continue;
-                }
-
-                for (int j = 0; j < studio_dict[i].size() && (!robot->item); j++){
-                    Studio* studio = studio_dict[i][j];
-                    double dist_tmp = abs(robot->position - studio->position);
-
-                    int item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist_tmp/6*FRAME_PRE_SEC);
-                    item_left -= buy_expect[studio->id];
-                    if (item_left <= 0){
-                        continue;
-                    }
-
-                    if (dist_tmp < dist){
-                        target = studio;
-                        dist = dist_tmp;
-                    }
-                }
+            if (studio->type > 7){
+                continue;
             }
-            if (target){
-                robot->dispatch(Task::BUY, target);
-                buy_expect[target->id]++;
-                item_require[target->type]--;
+            double dist = abs(robot->position - studio->position);
+            int item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/6*FRAME_PRE_SEC);
+            item_left -= buy_expect[studio->id];
+            if (item_left > 0 && item_require[studio->type] > 0){
+                robot->dispatch(studio);
+                buy_expect[studio->id]++;
+                item_require[studio->type]--;
             }
         }
     }
+
+
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
             for (double time = 0; time < 1; time += 0.1){
