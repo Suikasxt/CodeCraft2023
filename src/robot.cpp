@@ -30,15 +30,15 @@ void Robot::goToTargetStudio(){
     Point delta = target->position - position;
     double target_angle = atan2(delta.y, delta.x);
     double angle_delta = angleAdjust(target_angle - angle);
-    setAngleV(angle_delta * 3);
+    setAngleV(angle_delta * 5);
 
     double v = 0;
     if (abs(angle_delta) < 1){
         v = 6;
-        if (abs(delta) < 1){
-            v = 3;
+        if (abs(delta) < 0.7){
+            v = 1.5;
         }
-        if (abs(delta) < 0.4){
+        if (abs(delta) < 0.3){
             v = 0;
         }
     }

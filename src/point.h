@@ -1,5 +1,6 @@
 #ifndef POINT_H
 #define POINT_H
+#define _USE_MATH_DEFINES
 
 struct Point{
     double x,y;
