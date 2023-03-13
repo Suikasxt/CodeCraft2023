@@ -29,27 +29,15 @@ void Robot::outputToString(char output[]){
 void Robot::goToTargetStudio(){
     Point delta = target->position - position;
     double target_angle = atan2(delta.y, delta.x);
-    double angle_delta = target_angle - angle;
-    if (angle_delta > M_PI){
-        angle_delta -= M_PI*2;
-    }
-    if (angle_delta < -M_PI){
-        angle_delta += M_PI*2;
-    }
-    angle_v = angle_delta * 6;
-
-    if (angle_v > M_PI){
-        angle_v = M_PI;
-    }
-    if (angle_v < -M_PI){
-        angle_v = -M_PI;
-    }
-
-    printf("rotate %d %lf\n", id, angle_v);
+    double angle_delta = angleAdjust(target_angle - angle);
+    setAngleV(angle_delta * 4);
 
     double v = 0;
     if (abs(angle_delta) < 1.5){
         v = 6;
+        if (abs(delta) < 1){
+            v = 3;
+        }
     }
 
     velocity = Point(cos(angle), sin(angle))*v;
@@ -178,4 +166,20 @@ void Robot::dispatch(Task _task, Studio* _target){
     task_now = _task;
     target = _target;
     goToTargetStudio();
+}
+
+
+void Robot::setAngleV(double _angle_v){
+    angle_v = _angle_v;
+    if (angle_v > M_PI){
+        angle_v = M_PI;
+    }
+    if (angle_v < -M_PI){
+        angle_v = -M_PI;
+    }
+    printf("rotate %d %lf\n", id, angle_v);
+}
+
+double Robot::getRadius(){
+    return item? 0.53: 0.45;
 }

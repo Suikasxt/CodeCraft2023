@@ -33,5 +33,8 @@ public:
     
     void update();
     void dispatch(Task _task, Studio* _target);
+
+    void setAngleV(double _angle_v);
+    double getRadius();
 };
 #endif

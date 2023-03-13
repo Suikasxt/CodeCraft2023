@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <cassert>
 #include <ctime>
+#include <cmath>
 #include <cstring>
 #include <algorithm>
 #include "main.h"
@@ -111,6 +112,7 @@ void work(){
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         robot->task_now = Task::NONE;
+        //robot->stop();
 
         if (robot->item){
             double dist = INF;
@@ -159,6 +161,26 @@ void work(){
                 robot->dispatch(Task::BUY, target);
                 buy_expect[target->id] = 1;
                 item_require[target->type]--;
+            }
+        }
+    }
+    for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
+        for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
+            for (double time = 0; time < 1; time += 0.1){
+                Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
+                Point center = (robot_A->position + robot_B->position + (robot_A->velocity + robot_B->velocity) * time) * 0.5;
+                if (abs(next_delta) > (robot_A->getRadius() + robot_B->getRadius())/2){
+                    continue;
+                }
+                Point delta_A = center - robot_A->position;
+                Point delta_B = center - robot_B->position;
+                double angle_A = atan2(delta_A.y, delta_A.x);
+                double angle_B = atan2(delta_B.y, delta_B.x);
+                int flag_A = angleAdjust(angle_A - robot_A->angle) > 0? 1: -1;
+                int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
+                robot_A->setAngleV(robot_A->angle_v - flag_A*0.01);
+                robot_B->setAngleV(robot_B->angle_v - flag_B*0.01);
+                break;
             }
         }
     }

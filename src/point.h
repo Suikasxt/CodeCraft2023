@@ -10,4 +10,6 @@ Point operator + (Point a, Point b);
 Point operator - (Point a, Point b);
 Point operator * (Point a, double s);
 double abs2(Point a);
+double abs(Point a);
+double angleAdjust(double angle);
 #endif
