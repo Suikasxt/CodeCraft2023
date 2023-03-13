@@ -178,8 +178,8 @@ void work(){
                 double angle_B = atan2(delta_B.y, delta_B.x);
                 int flag_A = angleAdjust(angle_A - robot_A->angle) > 0? 1: -1;
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
-                robot_A->setAngleV(robot_A->angle_v - flag_A*0.01);
-                robot_B->setAngleV(robot_B->angle_v - flag_B*0.01);
+                robot_A->setAngleV(robot_A->angle_v - flag_A*0.05);
+                robot_B->setAngleV(robot_B->angle_v - flag_B*0.05);
                 break;
             }
         }
