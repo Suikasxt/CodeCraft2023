@@ -7,7 +7,7 @@
 using namespace std;
 
 //#define DEBUG_MODE
-#define FRAME 50
+#define FRAME_PRE_SEC 50
 #define INF 1e9
 
 extern vector<Studio> studio_list;
