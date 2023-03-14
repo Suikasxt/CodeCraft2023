@@ -113,9 +113,13 @@ void work(){
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         robot->task_now = Task::NONE;
+        //robot->stop();
         for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-            double dist = abs(robot->position - studio->position) + robot->id*1000;
-            work_list.push_back(make_pair(dist, make_pair(&(*robot), &(*studio))));
+            double value = -abs(robot->position - studio->position) - robot->id*1000;
+            if (robot->item == 0 && studio->type <= 7){
+                value += item_require[studio->type] * 0.0005;
+            }
+            work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
         }
     }
     sort(work_list.begin(), work_list.end());
@@ -141,6 +145,9 @@ void work(){
                 sell_expect[studio->id][item_id]++;
             }
         }else{
+            if (frameID > 8800){
+                continue;
+            }
             if (studio->type > 7){
                 continue;
             }
