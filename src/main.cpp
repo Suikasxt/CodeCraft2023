@@ -119,6 +119,7 @@ void work(){
             if (robot->item == 0 && studio->type <= 7){
                 value += item_require[studio->type] * 0.0005;
             }
+            value -= (studio->type > 7)*100;
             work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
         }
     }
@@ -138,6 +139,9 @@ void work(){
             double dist = abs(robot->position - studio->position);
 
             int space_left = (studio->item&robot->item) == 0;
+            if (studio->type > 7){
+                space_left += INF;
+            }
             space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
             space_left -= sell_expect[studio->id][item_id];
             if (space_left > 0){
