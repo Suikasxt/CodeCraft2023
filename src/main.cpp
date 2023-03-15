@@ -118,6 +118,13 @@ void work(){
             double value = -abs(robot->position - studio->position) - robot->id*1000;
             if (robot->item == 0 && studio->type <= 7){
                 value += item_require[studio->type] * 0.0005;
+                double min_dist = 5;
+                for (auto studio2 = studio_list.begin(); studio2 != studio_list.end(); studio2++){
+                    if ((MATERIAL[studio2->type]&PRODUCT[studio->type])!=0 && (studio2->item&PRODUCT[studio->type])==0){
+                        min_dist = min(min_dist, abs(studio->position - studio2->position));
+                    }
+                    value -= min_dist*0.05;
+                }
             }
             value -= (studio->type > 7)*100;
             work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
