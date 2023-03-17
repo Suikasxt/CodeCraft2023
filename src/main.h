@@ -9,6 +9,7 @@ using namespace std;
 //#define DEBUG_MODE
 #define FRAME_PRE_SEC 50
 #define INF 1e9
+#define EPS 1e-9
 
 extern vector<Studio> studio_list;
 extern vector<Robot> robot_list;

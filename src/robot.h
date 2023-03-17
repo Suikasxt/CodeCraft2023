@@ -35,6 +35,7 @@ public:
     void dispatch(Studio* _target);
 
     void setAngleV(double _angle_v);
+    void setVelocity(double _angle_v);
     double getRadius();
 };
 #endif

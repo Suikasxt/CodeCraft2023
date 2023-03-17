@@ -145,9 +145,9 @@ void work(){
                 sell_expect[studio->id][item_id]++;
             }
         }else{
-            if (frameID > 8800){
+            /*if (frameID > 8800){
                 continue;
-            }
+            }*/
             if (studio->type > 7){
                 continue;
             }
@@ -165,11 +165,16 @@ void work(){
 
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
-            for (double time = 0; time < 1; time += 0.1){
+            Point last_delta = robot_A->position - robot_B->position;
+            for (double time = 0.; time < 1; time += 0.05){
                 Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
                 if (abs(next_delta) > (robot_A->getRadius() + robot_B->getRadius())){
                     continue;
                 }
+                if (abs(next_delta) >= abs(last_delta) - EPS){
+                    break;
+                }
+                last_delta = next_delta;
                 Point center = (robot_A->position + robot_B->position + (robot_A->velocity + robot_B->velocity) * time) * 0.5;
                 Point delta_A = center - robot_A->position;
                 Point delta_B = center - robot_B->position;
@@ -177,8 +182,12 @@ void work(){
                 double angle_B = atan2(delta_B.y, delta_B.x);
                 int flag_A = angleAdjust(angle_A - robot_A->angle) > 0? 1: -1;
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
-                robot_A->setAngleV(robot_A->angle_v - flag_A*1.5);
-                robot_B->setAngleV(robot_B->angle_v - flag_B*1.5);
+                robot_A->setAngleV(robot_A->angle_v - flag_A*3);
+                robot_B->setAngleV(robot_B->angle_v - flag_B*3);
+#ifdef DEBUG_MODE
+                fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
+                fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
+#endif
                 break;
             }
         }

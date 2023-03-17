@@ -35,16 +35,14 @@ void Robot::goToTargetStudio(){
     double v = 0;
     if (abs(angle_delta) < 1){
         v = 6;
-        if (abs(delta) < 0.7){
+        if (abs(delta) < 0.8){
             v = 1.5;
         }
         if (abs(delta) < 0.3){
             v = 0;
         }
     }
-
-    velocity = Point(cos(angle), sin(angle))*v;
-    printf("forward %d %lf\n", id, v);
+    setVelocity(v);
 }
 
 void Robot::stop(){
@@ -178,6 +176,16 @@ void Robot::setAngleV(double _angle_v){
         angle_v = -M_PI;
     }
     printf("rotate %d %lf\n", id, angle_v);
+}
+void Robot::setVelocity(double v){
+    if (v >= 6){
+        v = 6;
+    }
+    if (v <= -2){
+        v = -2;
+    }
+    velocity = Point(cos(angle), sin(angle))*v;
+    printf("forward %d %lf\n", id, v);
 }
 
 double Robot::getRadius(){
