@@ -7,21 +7,25 @@ int moveTimePredict(Robot* robot){
     Point delta = robot->position - studio->position;
     double dist = abs(delta);
     double angle = atan2(delta.y, delta.x);
-    double time = dist/6 + abs(angleAdjust(angle - robot->angle))/M_PI*2;
-    return int((time+2) * FRAME_PRE_SEC); //To be adjust
+    double time = dist/6 + abs(angleAdjust(angle - robot->angle))/M_PI;
+    return int((time+1) * FRAME_PRE_SEC); //To be adjust
 }
 
 Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money)
     :studio_list(_studio_list), robot_list(_robot_list), frameID(_frameID), money(_money){};
 
 void Game::calcValue(){
-    value = money;
+    if (frameID > 8800){
+        value = money*100;
+        return;
+    }
+    value = money - frameID*20;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->item){
             int item_id = 0;
             for (int x=(robot->item>>1); x; x>>=1) item_id++;
             robot->flushTimeS(frameID);
-            value += VALUE[item_id] * robot->time_s * robot->collision_s * 0.8;
+            value += (VALUE[item_id] + COST[item_id])/2 * robot->time_s * robot->collision_s;
         }
         if (robot->target != -1){
             value -= abs(robot->position - studio_list[robot->target].position);
@@ -31,7 +35,7 @@ void Game::calcValue(){
     }
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
         if (studio->finish){
-            value += (VALUE[studio->type] - COST[studio->type]) * 0.1;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.5;
         }
         if (studio->time_left != -1 && studio->type < 8 && studio->type > 3){
             value += (VALUE[studio->type] - COST[studio->type]) * 10;
@@ -43,11 +47,6 @@ int Game::nextTimeStep(){
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now == Task::NONE){
             return 0;
-        }
-    }
-    for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-        if (studio->time_left > 0){
-            min_time_cost = min(min_time_cost, studio->time_left);
         }
     }
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
@@ -185,7 +184,7 @@ void Game::greedyWork(double value_list[4][50]){
             double dist = abs(robot->position - studio->position);
 
             int space_left = (studio->item&robot->item) == 0;
-            space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC + 50);
+            space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
             space_left -= sell_expect[studio->id][item_id];
             if (space_left > 0){
                 if (value_list){

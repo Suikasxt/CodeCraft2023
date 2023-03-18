@@ -103,7 +103,7 @@ void stateOutput(){
 }
 void search(int width, int time){
     Heap heap(width);
-    int max_time = frameID + time;
+    int max_time = min(frameID + time, 9000);
     vector<UpdateRoad> road;
     Game* g = new Game(studio_list, robot_list, frameID, money);
     g->road_id = -1;
@@ -146,7 +146,7 @@ void search(int width, int time){
             memcpy(tmp, value_list[i], sizeof(tmp));
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
-                if (value_list[i][j] <= tmp[studio_list.size() - 1 - 3]){
+                if (value_list[i][j] <= tmp[studio_list.size() - 1 - 10]){
                     continue;
                 } 
                 Studio* studio = &(g->studio_list[j]);
@@ -213,7 +213,7 @@ void work(){
         }
     }
     if (redesign){
-        search(500, 1000);
+        search(200, 500);
     }
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
