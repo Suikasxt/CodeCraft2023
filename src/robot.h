@@ -3,9 +3,11 @@
 
 #include "point.h"
 #include "studio.h"
+#include <vector>
+using namespace std;
 
 enum Task{
-    NONE, BUY, SELL
+    NONE, BUY, SELL, STOP, WAIT
 };
 
 class Robot{
@@ -13,7 +15,9 @@ public:
     int id;
     int studio_id;
     int item;
-    Studio *target;
+    int data_frameID;
+    int pick_up_time;
+    int target;
     Task task_now;
     double time_s;
     double collision_s;
@@ -26,16 +30,17 @@ public:
     void readFromString(char input[]);
     void outputToString(char output[]);
     void stop();
-    void buy();
-    void sell();
+    int buy(vector<Studio>& studio_list, int frameID, bool output = false);
+    int sell(vector<Studio>& studio_list, int frameID, bool output = false);
     void destroy();
-    void goToTargetStudio();
+    void goToTargetStudio(Studio* studio);
     
-    void update();
-    void dispatch(Studio* _target);
+    int update(vector<Studio>& studio_list, int frameID, bool output = false);
+    void dispatch(Studio* studio, bool output = false);
 
     void setAngleV(double _angle_v);
     void setVelocity(double _angle_v);
     double getRadius();
+    void flushTimeS(int frameID);
 };
 #endif

@@ -6,15 +6,19 @@
 #include <cstring>
 #include <algorithm>
 #include "main.h"
+#include "heap.h"
+#include <queue>
 
 vector<Studio> studio_list;
 vector<Robot> robot_list;
 vector<Studio*> studio_dict[10];
 FILE* warning_output;
 int money = 200000;
-int frameID;
+int frameID = 0;
 char map[110][110];
-void readUntilOK() {
+int robot_target[4];
+vector<pair<int, int> > arr_list[4];
+void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
 
@@ -28,6 +32,16 @@ void readUntilOK() {
         fgets(line, sizeof(line), stdin);
         robot_list[i].readFromString(line);
     }
+    for (int i = 0; i < 4; i++){
+        if (robot_list[i].studio_id == -1){
+            continue;
+        }
+        if (arr_list[i].size() && robot_list[i].studio_id == arr_list[i][arr_list[i].size()-1].first){
+            continue;
+        }
+        arr_list[i].push_back(make_pair(robot_list[i].studio_id, frameID));
+    }
+
 
     scanf("%s", line);
     assert(line[0] == 'O' && line[1] == 'K');
@@ -87,96 +101,172 @@ void stateOutput(){
     }
     fclose(file);
 }
-
-void work(){
-    int buy_expect[52] = {};
-    int sell_expect[52][10] = {};
-    vector<pair<double, pair<Robot*, Studio*> > > work_list;
-    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        robot->update();
+void search(int width, int time){
+    Heap heap(width);
+    int max_time = frameID + time;
+    vector<UpdateRoad> road;
+    Game* g = new Game(studio_list, robot_list, frameID, money);
+    g->road_id = -1;
+    g->passTime(0);
+    heap.push(g);
+    double max_value = -INF;
+    int res_road_id = -1;
+    while (heap.size){
+        Game* g = new Game(*heap.top());
+#ifdef DEBUG_MODE
+    fprintf(warning_output, "\n\nSize %d %d\n", heap.size, res_road_id);
+    fprintf(warning_output, "\n\nFrame: %d, money: %d, time: %d, value: %lf\n", g->frameID, g->money, g->nextTimeStep(), g->value);
+    for (int i = 0; i < 4; i++){
+        fprintf(warning_output, "ID: %d, Task: %d, Target: %d, Item: %d\n", i, g->robot_list[i].task_now, g->robot_list[i].target, g->robot_list[i].item);
     }
-    int item_require[8]={};
-    
-    for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-        for (int i = 1; i <= 7; i++){
-            if (((MATERIAL[studio->type]^studio->item)>>i)&1){
-                item_require[i]++;
-            }
+    fflush(warning_output);
+#endif
+        if (g->value > max_value && g->road_id != -1){
+            max_value = g->value;
+            res_road_id = g->road_id;
         }
-    }
-    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        for (int i = 1; i <= 7; i++){
-            if ((robot->item>>i)&1)
-            item_require[i]--;
-        }
-    }
-
-    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        robot->task_now = Task::NONE;
-        //robot->stop();
-        for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-            double value = -abs(robot->position - studio->position) - robot->id*1000;
-            if (robot->item == 0 && studio->type <= 7){
-                value += item_require[studio->type] * 0.0005;
-                double min_dist = 5;
-                for (auto studio2 = studio_list.begin(); studio2 != studio_list.end(); studio2++){
-                    if ((MATERIAL[studio2->type]&PRODUCT[studio->type])!=0 && (studio2->item&PRODUCT[studio->type])==0){
-                        min_dist = min(min_dist, abs(studio->position - studio2->position));
-                    }
-                    value -= min_dist*0.05;
-                }
-            }
-            value -= (studio->type > 7)*100;
-            work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
-        }
-    }
-    sort(work_list.begin(), work_list.end());
-    for (auto work = work_list.begin(); work != work_list.end(); work++){
-        Robot* robot = work->second.first;
-        Studio* studio = work->second.second;
-        if (robot->task_now != Task::NONE){
+        heap.pop(1, 0);
+        g->passTime(g->nextTimeStep());
+        if (g->frameID > max_time){
             continue;
         }
-        if (robot->item){
-            int item_id = 0;
-            for (int x=(robot->item>>1); x; x>>=1) item_id++;
-            if ((MATERIAL[studio->type]&robot->item) == 0){
-                continue;
-            }
-            double dist = abs(robot->position - studio->position);
-
-            int space_left = (studio->item&robot->item) == 0;
-            if (studio->type > 7){
-                space_left += INF;
-            }
-            space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
-            space_left -= sell_expect[studio->id][item_id];
-            if (space_left > 0){
-                robot->dispatch(studio);
-                sell_expect[studio->id][item_id]++;
-            }
-        }else{
-            /*if (frameID > 8800){
-                continue;
-            }*/
-            if (studio->type > 7){
-                continue;
-            }
-            double dist = abs(robot->position - studio->position);
-            int item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/6*FRAME_PRE_SEC);
-            item_left -= buy_expect[studio->id];
-            if (item_left > 0 && item_require[studio->type] > 0){
-                robot->dispatch(studio);
-                buy_expect[studio->id]++;
-                item_require[studio->type]--;
+        double value_list[4][50];
+        for (int i = 0; i < 4; i++){
+            for (int j = 0; j < g->studio_list.size(); j++){
+                value_list[i][j] = -INF;
             }
         }
+        g->greedyWork(value_list);
+        for (int i = 0; i < 4; i++){
+            Robot* robot = &(g->robot_list[i]);
+            if (robot->task_now != Task::NONE){
+                continue;
+            }
+            double tmp[50];
+            memcpy(tmp, value_list[i], sizeof(tmp));
+            sort(tmp, tmp+studio_list.size());
+            for (int j = 0; j < g->studio_list.size(); j++){
+                if (value_list[i][j] <= tmp[studio_list.size() - 1 - 3]){
+                    continue;
+                } 
+                Studio* studio = &(g->studio_list[j]);
+                bool co_target = false;
+#ifdef DEBUG_MODE
+    //fprintf(warning_output, "A Test %d %d\n", i, j);
+    //fflush(warning_output);
+#endif
+                /*for (int k = 0; k < 4; k++){
+                    if (j == robot_list[k].target){
+                        co_target = true;
+                    }
+                }
+                if (co_target){
+                    continue;
+                }*/
+                if (robot->item && (MATERIAL[studio->type]&(robot->item)) == 0){
+                    continue;
+                }
+                if (robot->item == 0 && PRODUCT[studio->type] == 0){
+                    continue;
+                }
+                if (robot->item == 0 && studio->finish == 0 && studio->time_left == -1){
+                    continue;
+                }
+                Game* new_g = new Game(*g);
+                if (robot->item){
+                    new_g->robot_list[i].task_now = Task::SELL;
+                }else{
+                    new_g->robot_list[i].task_now = Task::BUY;
+                }
+                new_g->robot_list[i].target = j;
+                if (heap.push(new_g)){
+                    new_g->road_id = road.size();
+                    road.push_back(UpdateRoad(g->road_id, i, j));
+                }
+            }
+            /*if (robot->item == 0){
+                Game* new_g = new Game(*g);
+                new_g->robot_list[i].task_now = Task::STOP;
+                new_g->robot_list[i].target = -1;
+                if (heap.push(new_g)){
+                    new_g->road_id = road.size();
+                    road.push_back(UpdateRoad(g->road_id, i, -1));
+                }
+            }*/
+            break;
+        }
     }
+    memset(robot_target, -1, sizeof(robot_target));
+    while (res_road_id!=-1){
+        robot_target[road[res_road_id].robot_id] = road[res_road_id].target_id;
+        res_road_id = road[res_road_id].pre_id;
+    }
+    //fprintf(stderr, "%d %lf %d\n", frameID, max_value, res_road_id);
+}
+
+void work(){
+    bool redesign = false;
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        money += robot->update(studio_list, frameID, true);
+        if (robot->task_now == Task::NONE && frameID > 1){
+            redesign = true;
+        }
+    }
+    if (redesign){
+        search(500, 1000);
+    }
+
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->task_now == Task::WAIT){
+            robot->task_now = Task::NONE;
+        }
+        if (robot->task_now != Task::NONE){
+            robot->dispatch(&(studio_list[robot->target]), true);
+        }else if (robot_target[robot->id] == -1){
+            robot->task_now = Task::WAIT;
+        }else{
+            robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
+            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+        }
+    }
+    #ifdef DEBUG_MODE
+        for (int i = 0; i < 4; i++){
+            fprintf(warning_output, "ID: %d, Target: %d\n", i, robot_list[i].target);
+        }
+        fflush(warning_output);
+    #endif
+    /*
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        money += robot->update(studio_list, frameID, true);
+    }
+    if (frameID == 1){
+        Game g(studio_list, robot_list, frameID, money);
+        g.greedyWork();
+        for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+            robot->dispatch(&studio_list[g.robot_list[robot->id].target]);
+        }
+    }
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        //robot->task_now = Task::NONE;
+        if (robot->task_now == Task::NONE){
+            Game g(studio_list, robot_list, frameID, money);
+            int target_id = g.MCTS(robot->id);
+            #ifdef DEBUG_MODE
+                fprintf(warning_output, "Frame: %d, ID: %d, Target: %d\n", frameID, robot->id, target_id);
+                fflush(warning_output);
+            #endif
+            robot->dispatch(&studio_list[target_id], true);
+            //fprintf(stderr, "%d dispatch %d %d\n", frameID, robot->id, robot->target);
+        }else if (robot->target != -1){
+            robot->dispatch(&studio_list[robot->target], true);
+        }
+    }
+    */
 
 
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
-            Point last_delta = robot_A->position - robot_B->position;
+            Point last_delta = INF;
             for (double time = 0.; time < 1; time += 0.05){
                 Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
                 if (abs(next_delta) > (robot_A->getRadius() + robot_B->getRadius())){
@@ -193,8 +283,8 @@ void work(){
                 double angle_B = atan2(delta_B.y, delta_B.x);
                 int flag_A = angleAdjust(angle_A - robot_A->angle) > 0? 1: -1;
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
-                robot_A->setAngleV(robot_A->angle_v - flag_A*3);
-                robot_B->setAngleV(robot_B->angle_v - flag_B*3);
+                robot_A->setAngleV(robot_A->angle_v - flag_A*2);
+                robot_B->setAngleV(robot_B->angle_v - flag_B*2);
 #ifdef DEBUG_MODE
                 fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
                 fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
@@ -211,24 +301,42 @@ int main() {
 #endif
 
     readMap();
+    stateOutput();
+    search(1000, 3000);
     puts("OK");
     fflush(stdout);
     while (scanf("%d", &frameID) != EOF) {
+        //fprintf(stderr, "%d\n", frameID);
         readUntilOK();
         printf("%d\n", frameID);
 
         work();
 #ifdef DEBUG_MODE
-        fprintf(warning_output, "Start frame ID: %d, money: %d, clock: %.6lfs %lf %lf\n", frameID, money, double(clock())/CLOCKS_PER_SEC, robot_list[0].position.x, robot_list[0].position.y);
+        fprintf(warning_output, "End frame ID: %d, money: %d, clock: %.6lfs %lf %lf\n", frameID, money, double(clock())/CLOCKS_PER_SEC, robot_list[0].position.x, robot_list[0].position.y);
 #endif
         printf("OK\n", frameID);
 
         stateOutput();
         fflush(stdout);
+    }
+#ifdef DEBUG_MODE
+    for (int i = 0; i < 4; i++){
+        int angle = 0;
+        for (int j = 1; j < arr_list[i].size(); j++){
+            Point delta = studio_list[arr_list[i][j].first].position - studio_list[arr_list[i][j-1].first].position;
+            double angle_now = atan2(delta.y, delta.x);
+            Robot robot(0, studio_list[arr_list[i][j-1].first].position);
+            robot.angle = angle;
+            robot.target = arr_list[i][j].first;
+            fprintf(warning_output, "%d %lf %lf %d\n",
+            arr_list[i][j].second - arr_list[i][j-1].second, abs(delta), angleAdjust(angle_now - angle), moveTimePredict(&robot));
+            angle = angle_now;
+        }
+    }
+        #endif
 #ifdef DEBUG_MODE
         fflush(warning_output);
 #endif
-    }
     
 #ifdef DEBUG_MODE
     fclose(warning_output);

@@ -17,6 +17,9 @@ double abs(Point a){
     return sqrt(abs2(a));
 }
 
+double absManhattan(Point a){
+    return abs(a.x) + abs(a.y);
+}
 double angleAdjust(double angle){
     if (angle > M_PI){
         angle -= M_PI*2;

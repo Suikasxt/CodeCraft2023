@@ -1,7 +1,11 @@
 #include "studio.h"
 
 Studio::Studio(int _id, int _type, Point _position)
-:id(_id), type(_type), position(_position){};
+:id(_id), type(_type), position(_position){
+    item = 0;
+    time_left = -1;
+    finish = 0;
+};
 
 void Studio::readFromString(char input[]){
     sscanf(input, "%d %lf %lf %d %d %d",
@@ -11,6 +15,18 @@ void Studio::readFromString(char input[]){
 void Studio::outputToString(char output[]){
     sprintf(output, "Studio id: %d \ntype: %d \ntime_left: %d \nitem: %d \nfinish: %d \nposition: (%lf, %lf)\n",
             id, type, time_left, item, finish, position.x, position.y);
+}
+void Studio::update(){
+    if (time_left == 0 && finish == 0){
+        time_left = -1;
+        if (type < 8){
+            finish = 1;
+        }
+    }
+    if (time_left == -1 && (item == MATERIAL[type] || (item && type == 9))){
+        time_left = PERIOD[type];
+        item = 0;
+    }
 }
 
 

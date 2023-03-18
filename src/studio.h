@@ -15,6 +15,7 @@ public:
     Studio(int _id, int _type, Point _position);
     void readFromString(char input[]);
     void outputToString(char output[]);
+    void update();
 };
 
 extern const int MATERIAL[10];

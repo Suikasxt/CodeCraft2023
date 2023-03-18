@@ -1,9 +1,11 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#define _USE_MATH_DEFINES
 #include <vector>
 #include "robot.h"
 #include "studio.h"
+#include "game.h"
 using namespace std;
 
 //#define DEBUG_MODE
@@ -18,5 +20,8 @@ extern FILE* warning_output;
 extern int money;
 extern int frameID;
 extern char map[110][110];
+
+
+#pragma GCC optimize("Ofast")
 
 #endif

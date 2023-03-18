@@ -1,6 +1,7 @@
+#define _USE_MATH_DEFINES
 #ifndef POINT_H
 #define POINT_H
-#define _USE_MATH_DEFINES
+#include <cmath>
 
 struct Point{
     double x,y;
@@ -13,4 +14,5 @@ Point operator * (Point a, double s);
 double abs2(Point a);
 double abs(Point a);
 double angleAdjust(double angle);
+double absManhattan(Point a);
 #endif
