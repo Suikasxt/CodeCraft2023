@@ -196,13 +196,12 @@ void Game::greedyWork(double value_list[4][50]){
             int space_left = (studio->item&robot->item) == 0;
             space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
             space_left -= sell_expect[studio->id][item_id];
-            if (space_left > 0){
-                if (value_list){
-                    value_list[robot->id][studio->id] = -(work->first);
-                }else{
-                    robot->dispatch(studio);
-                    sell_expect[studio->id][item_id]++;
-                }
+            if (space_left > 0 && value_list == NULL){
+                robot->dispatch(studio);
+                sell_expect[studio->id][item_id]++;
+            }
+            if (value_list){
+                value_list[robot->id][studio->id] = -(work->first) + min(space_left - 1, 0)*100000;
             }
         }else{
             if (studio->type > 7){
@@ -211,14 +210,13 @@ void Game::greedyWork(double value_list[4][50]){
             double dist = abs(robot->position - studio->position);
             int item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/6*FRAME_PRE_SEC);
             item_left -= buy_expect[studio->id];
-            if (item_left > 0 && item_require[studio->type] > 0){
-                if (value_list){
-                    value_list[robot->id][studio->id] = -(work->first);
-                }else{
-                    robot->dispatch(studio);
-                    buy_expect[studio->id]++;
-                    item_require[studio->type]--;
-                }
+            if (item_left > 0 && item_require[studio->type] > 0 && value_list == NULL){
+                robot->dispatch(studio);
+                buy_expect[studio->id]++;
+                item_require[studio->type]--;
+            }
+            if (value_list){
+                value_list[robot->id][studio->id] = -(work->first) + min(min(item_left - 1, item_require[studio->type] - 1), 0)*100000;
             }
         }
     }
