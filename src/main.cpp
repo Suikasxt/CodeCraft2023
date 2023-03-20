@@ -344,7 +344,9 @@ int main() {
         if (studio_list.size() == MAP_FEATURE[i][0] && studio_list[0].type == MAP_FEATURE[i][1] && studio_list[1].type == MAP_FEATURE[i][2]){
             map_num = i+1;
             //这个开关用来切换计算模式还是推理模式，break开了就是本地计算，最后会打一个结果到warning.txt，从里面把数据贴到data.h就可以
+#ifdef _LOCAL
             break;
+#endif
             pre_work = true;
             for (int j = 0; j < 4; j++){
                 while (!robot_target_stack[j].empty()) robot_target_stack[j].pop();

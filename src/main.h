@@ -8,7 +8,9 @@
 #include "game.h"
 using namespace std;
 
-#define DEBUG_MODE
+#ifdef _LOCAL
+//#define DEBUG_MODE
+#endif
 #define FRAME_PRE_SEC 50
 #define INF 1e9
 #define EPS 1e-9
