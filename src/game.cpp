@@ -1,6 +1,7 @@
 #include "game.h"
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 
 int moveTimePredict(Robot* robot){
     Studio* studio = &(studio_list[robot->target]);
