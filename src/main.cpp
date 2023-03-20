@@ -143,6 +143,7 @@ void search(int width, int time){
             }
         }
         g->greedyWork(value_list);
+        
         for (int i = 0; i < 4; i++){
             Robot* robot = &(g->robot_list[i]);
             if (robot->task_now != Task::NONE){
@@ -162,10 +163,10 @@ void search(int width, int time){
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
                 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-                int search_width_K = 2;
-                if (value_list[i][j] <= tmp[g->studio_list.size() - 1 - search_width_K] || value_list[i][j] <= -INF+EPS){
+                int search_width_K = 3;
+                if (value_list[i][j] < tmp[g->studio_list.size() - search_width_K] || value_list[i][j] <= -INF+EPS){
                     continue;
-                } 
+                }
                 Studio* studio = &(g->studio_list[j]);
                 Game* new_g = new Game(*g);
                 if (robot->item){
@@ -197,7 +198,9 @@ void search(int width, int time){
     }
     while (res_road_id!=-1){
         robot_target[road[res_road_id].robot_id] = road[res_road_id].target_id;
-        robot_target_stack[road[res_road_id].robot_id].push(road[res_road_id].target_id);
+        if (road[res_road_id].target_id!=-1){
+            robot_target_stack[road[res_road_id].robot_id].push(road[res_road_id].target_id);
+        }
         res_road_id = road[res_road_id].pre_id;
     }
     
@@ -209,16 +212,16 @@ void search(int width, int time){
             fprintf(stderr, "%d, ", tmp.top());
             tmp.pop();
         } 
-        fprintf(stderr, "-1},\n");
+        fprintf(stderr, "},\n");
     }
-    fprintf(stderr, "Except money: %lf\n", max_value);
+    fprintf(stderr, "FrameID %d Except money: %lf\n", frameID, max_value);
 }
 
 int last_design = -INF;
 void work(){
     //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
     int interval = 1000;
-    int beam_width = 1000;
+    int beam_width = 50000;
     bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now == Task::WAIT){
@@ -237,7 +240,7 @@ void work(){
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now != Task::NONE){
             robot->dispatch(&(studio_list[robot->target]), true);
-        }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top() == -1){
+        }else if (robot_target_stack[robot->id].empty()){
             robot->task_now = Task::WAIT;
         }else{
             if (robot_target_stack[robot->id].empty()){
@@ -247,7 +250,7 @@ void work(){
             robot_target_real[robot->id].push_back(robot_target[robot->id]);
             robot_target_stack[robot->id].pop();
             robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
-            fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
         }
     }
     #ifdef DEBUG_MODE
@@ -324,8 +327,8 @@ void work(){
                     }
                 }
 #ifdef DEBUG_MODE
-                fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
-                fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
+                //fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
+                //fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
 #endif
                 break;
             }
