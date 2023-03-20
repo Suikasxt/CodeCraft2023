@@ -152,7 +152,7 @@ void search(int width, int time){
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
                 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-                int search_width_K = 3;
+                int search_width_K = 2;
                 if (value_list[i][j] <= tmp[g->studio_list.size() - 1 - search_width_K] || value_list[i][j] <= -INF+EPS){
                     continue;
                 } 
@@ -187,7 +187,7 @@ void search(int width, int time){
                     road.push_back(UpdateRoad(g->road_id, i, j));
                 }
             }
-            if (robot->item == -1){
+            if (robot->item == 0){
                 Game* new_g = new Game(*g);
                 new_g->robot_list[i].task_now = Task::STOP;
                 new_g->robot_list[i].target = -1;
@@ -226,9 +226,12 @@ int last_design = -INF;
 void work(){
     //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
     int interval = 1000;
-    int beam_width = 10000;
+    int beam_width = 1000;
     bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->task_now == Task::WAIT){
+            robot->task_now = Task::NONE;
+        }
         money += robot->update(studio_list, frameID, true);
         if (robot->task_now == Task::NONE && frameID > last_design + interval){
             redesign = true;
@@ -240,9 +243,6 @@ void work(){
     }
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        if (robot->task_now == Task::WAIT){
-            robot->task_now = Task::NONE;
-        }
         if (robot->task_now != Task::NONE){
             robot->dispatch(&(studio_list[robot->target]), true);
         }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top() == -1){
@@ -299,7 +299,7 @@ void work(){
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
             Point last_delta = (robot_A->position - robot_B->position);
-            for (double time = 0.01; time < 1; time += 0.1){
+            for (double time = 0.01; time < 1; time += 0.02){
                 Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
                 if (abs(next_delta) >= abs(last_delta) - EPS){
                     break;
@@ -317,12 +317,20 @@ void work(){
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
                 robot_A->setAngleV(robot_A->angle_v - flag_A*3);
                 robot_B->setAngleV(robot_B->angle_v - flag_B*3);
-                /*if (abs(robot_A->angle_v) < 0.5){
-                    robot_A->setAngleV(robot_A->angle_v - flag_A*1.5);
+                if (time < 0.1){
+                    robot_A->setAngleV(robot_A->angle_v - flag_A*2);
+                    robot_B->setAngleV(robot_B->angle_v - flag_B*2);
                 }
-                if (abs(robot_B->angle_v) < 0.5){
-                    robot_B->setAngleV(robot_B->angle_v - flag_B*1.5);
-                }*/
+                
+                Point target_delta_A = robot_A->target==-1?Point(INF, INF) : (robot_A->position - studio_list[robot_A->target].position);
+                Point target_delta_B = robot_B->target==-1?Point(INF, INF) : (robot_B->position - studio_list[robot_B->target].position);
+                if (robot_A->target == robot_B->target){
+                    if (abs(target_delta_A) > abs(target_delta_B)){
+                        robot_A->setVelocity(abs(robot_A->velocity)-3);
+                    }else{
+                        robot_B->setVelocity(abs(robot_B->velocity)-3);
+                    }
+                }
 #ifdef DEBUG_MODE
                 fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
                 fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
@@ -383,6 +391,9 @@ int main() {
             Robot robot(0, studio_list[arr_list[i][j-1].first].position);
             robot.angle = angle;
             robot.target = arr_list[i][j].first;
+            if (abs(arr_list[i][j].second - arr_list[i][j-1].second - moveTimePredict(&robot) + 50) < 50){
+                continue;
+            }
             fprintf(warning_output, "%lf %lf %d %d\n",
             abs(delta), angleAdjust(angle_now - angle), arr_list[i][j].second - arr_list[i][j-1].second, moveTimePredict(&robot));
             angle = angle_now;
