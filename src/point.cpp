@@ -1,5 +1,5 @@
 #include "point.h"
-#include <cmath>
+#include <math.h>
 
 Point operator + (Point a, Point b){
     return Point(a.x+b.x, a.y+b.y);
@@ -18,7 +18,7 @@ double abs(Point a){
 }
 
 double absManhattan(Point a){
-    return abs(a.x) + abs(a.y);
+    return fabs(a.x) + fabs(a.y);
 }
 double angleAdjust(double angle){
     if (angle > M_PI){

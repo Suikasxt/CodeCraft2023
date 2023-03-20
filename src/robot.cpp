@@ -1,7 +1,7 @@
 #include "robot.h"
 #include "main.h"
 #include <stdio.h>
-#include <cmath>
+#include <math.h>
 
 Robot::Robot(int _id, Point _position)
 :id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
@@ -37,7 +37,7 @@ void Robot::goToTargetStudio(Studio* studio){
     setAngleV(angle_delta * 5);
 
     double v = 0;
-    if (abs(angle_delta) < 1){
+    if (fabs(angle_delta) < 1){
         v = 6;
         if (abs(delta) < 1){
             v = 1.5;

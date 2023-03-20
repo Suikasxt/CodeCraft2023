@@ -1,7 +1,7 @@
 #define _USE_MATH_DEFINES
 #ifndef POINT_H
 #define POINT_H
-#include <cmath>
+#include <math.h>
 
 struct Point{
     double x,y;

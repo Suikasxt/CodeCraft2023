@@ -9,7 +9,7 @@ int moveTimePredict(Robot* robot){
     double dist = abs(delta);
     double angle = atan2(delta.y, delta.x);
     double time = dist/6;
-    double angle_delta = abs(angleAdjust(angle - robot->angle));
+    double angle_delta = fabs(angleAdjust(angle - robot->angle));
     if (angle_delta > 1){
         time += (angle_delta-1)/M_PI;
         angle_delta = 1;
