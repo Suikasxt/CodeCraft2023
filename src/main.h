@@ -20,6 +20,7 @@ extern FILE* warning_output;
 extern int money;
 extern int frameID;
 extern char map[110][110];
+extern int map_num;
 
 
 #pragma GCC optimize("Ofast")

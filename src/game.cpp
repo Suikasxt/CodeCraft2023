@@ -14,17 +14,17 @@ int moveTimePredict(Robot* robot){
         time += (angle_delta-1)/M_PI;
         angle_delta = 1;
     }
-    return int((time + angle_delta*0.4) * FRAME_PRE_SEC); //To be adjust
+    return int((time + angle_delta*0.4 + 1) * FRAME_PRE_SEC); //To be adjust
 }
 
 Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money)
     :studio_list(_studio_list), robot_list(_robot_list), frameID(_frameID), money(_money){};
 
 void Game::calcValue(){
-    if (frameID > 8800){
+    /*if (frameID > 8900){
         value = money*1000;
         return;
-    }
+    }*/
     value = money - frameID*20;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->item){

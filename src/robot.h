@@ -23,6 +23,7 @@ public:
     double collision_s;
     double angle;
     double angle_v;
+    int last_target;
     Point position;
     Point velocity;
 

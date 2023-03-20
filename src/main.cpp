@@ -21,7 +21,8 @@ int robot_target[4];
 stack<int> robot_target_stack[4];
 vector<int> robot_target_real[4];
 vector<pair<int, int> > arr_list[4];
-    bool pre_work = false;
+bool pre_work = false;
+int map_num = 0;
 void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
@@ -148,33 +149,24 @@ void search(int width, int time){
                 continue;
             }
             double tmp[50];
+            /*for (int k = 0; k < 4; k++){
+                if (k == i) continue;
+                if (robot_list[k].target != -1){
+                    value_list[i][robot_list[k].target] -= 1000;
+                }
+                if (robot_list[k].last_target != -1){
+                    value_list[i][robot_list[k].last_target] -= 1000;
+                }
+            }*/
             memcpy(tmp, value_list[i], sizeof(tmp));
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
                 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-                int search_width_K = 3;
+                int search_width_K = 2;
                 if (value_list[i][j] <= tmp[g->studio_list.size() - 1 - search_width_K] || value_list[i][j] <= -INF+EPS){
                     continue;
                 } 
                 Studio* studio = &(g->studio_list[j]);
-                /*bool co_target = false;
-                for (int k = 0; k < 4; k++){
-                    if (j == robot_list[k].target){
-                        co_target = true;
-                    }
-                }
-                if (co_target){
-                    continue;
-                }
-                if (robot->item && (MATERIAL[studio->type]&(robot->item)) == 0){
-                    continue;
-                }
-                if (robot->item == 0 && PRODUCT[studio->type] == 0){
-                    continue;
-                }
-                if (robot->item == 0 && studio->finish == 0 && studio->time_left == -1){
-                    continue;
-                }*/
                 Game* new_g = new Game(*g);
                 if (robot->item){
                     new_g->robot_list[i].task_now = Task::SELL;
@@ -187,7 +179,7 @@ void search(int width, int time){
                     road.push_back(UpdateRoad(g->road_id, i, j));
                 }
             }
-            if (robot->item == -1){
+            if (robot->item == 0){
                 Game* new_g = new Game(*g);
                 new_g->robot_list[i].task_now = Task::STOP;
                 new_g->robot_list[i].target = -1;
@@ -226,9 +218,12 @@ int last_design = -INF;
 void work(){
     //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
     int interval = 1000;
-    int beam_width = 10000;
+    int beam_width = 1000;
     bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->task_now == Task::WAIT){
+            robot->task_now = Task::NONE;
+        }
         money += robot->update(studio_list, frameID, true);
         if (robot->task_now == Task::NONE && frameID > last_design + interval){
             redesign = true;
@@ -240,9 +235,6 @@ void work(){
     }
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        if (robot->task_now == Task::WAIT){
-            robot->task_now = Task::NONE;
-        }
         if (robot->task_now != Task::NONE){
             robot->dispatch(&(studio_list[robot->target]), true);
         }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top() == -1){
@@ -299,7 +291,7 @@ void work(){
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
             Point last_delta = (robot_A->position - robot_B->position);
-            for (double time = 0.01; time < 1; time += 0.1){
+            for (double time = 0.01; time < 1; time += 0.02){
                 Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
                 if (abs(next_delta) >= abs(last_delta) - EPS){
                     break;
@@ -317,12 +309,20 @@ void work(){
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
                 robot_A->setAngleV(robot_A->angle_v - flag_A*3);
                 robot_B->setAngleV(robot_B->angle_v - flag_B*3);
-                /*if (abs(robot_A->angle_v) < 0.5){
-                    robot_A->setAngleV(robot_A->angle_v - flag_A*1.5);
+                if (time < 0.1){
+                    robot_A->setAngleV(robot_A->angle_v - flag_A*2);
+                    robot_B->setAngleV(robot_B->angle_v - flag_B*2);
                 }
-                if (abs(robot_B->angle_v) < 0.5){
-                    robot_B->setAngleV(robot_B->angle_v - flag_B*1.5);
-                }*/
+                
+                Point target_delta_A = robot_A->target==-1?Point(INF, INF) : (robot_A->position - studio_list[robot_A->target].position);
+                Point target_delta_B = robot_B->target==-1?Point(INF, INF) : (robot_B->position - studio_list[robot_B->target].position);
+                if (robot_A->target == robot_B->target){
+                    if (abs(target_delta_A) > abs(target_delta_B)){
+                        robot_A->setVelocity(abs(robot_A->velocity)-3);
+                    }else{
+                        robot_B->setVelocity(abs(robot_B->velocity)-3);
+                    }
+                }
 #ifdef DEBUG_MODE
                 fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
                 fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
@@ -334,14 +334,12 @@ void work(){
 }
 
 int main() {
-#ifdef DEBUG_MODE
-    warning_output = fopen("warning.txt", "w");
-#endif
 
     readMap();
     stateOutput();
     for (int i = 0; i < PRE_WORK_MAP_NUM; i++){
         if (studio_list.size() == MAP_FEATURE[i][0] && studio_list[0].type == MAP_FEATURE[i][1] && studio_list[1].type == MAP_FEATURE[i][2]){
+            map_num = i+1;
             //这个开关用来切换计算模式还是推理模式，break开了就是本地计算，最后会打一个结果到warning.txt，从里面把数据贴到data.h就可以
             break;
             pre_work = true;
@@ -358,6 +356,11 @@ int main() {
             break;
         }
     }
+#ifdef DEBUG_MODE
+    char file_name[100];
+    sprintf(file_name, "warning_%d.txt", map_num);
+    warning_output = fopen(file_name, "w");
+#endif
     puts("OK");
     fflush(stdout);
     while (scanf("%d", &frameID) != EOF) {

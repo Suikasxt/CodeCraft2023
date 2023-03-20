@@ -4,7 +4,7 @@
 #include <math.h>
 
 Robot::Robot(int _id, Point _position)
-:id(_id),position(_position),task_now(NONE),target(-1){
+:id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
     data_frameID = 0;
     angle = 0;
     item = 0;
@@ -39,11 +39,19 @@ void Robot::goToTargetStudio(Studio* studio){
     double v = 0;
     if (abs(angle_delta) < 1){
         v = 6;
-        if (abs(delta) < 0.8){
+        if (abs(delta) < 1){
             v = 1.5;
         }
         if (abs(delta) < 0.4){
             v = 0;
+        }
+        if ((studio->item&item)){
+            if (abs(delta) <= 2){
+                v = 0;
+            }
+            if (abs(delta) < 0.5){
+                v = -2;
+            }
         }
     }
     setVelocity(v);
@@ -156,6 +164,7 @@ int Robot::update(vector<Studio> &studio_list, int frameID, bool output){
         money += buy(studio_list, frameID, output);
         if (money){
             task_now = Task::NONE;
+            last_target = target;
             target = -1;
         }
         return money;
@@ -167,6 +176,7 @@ int Robot::update(vector<Studio> &studio_list, int frameID, bool output){
         money += sell(studio_list, frameID, output);
         if (money){
             task_now = Task::NONE;
+            last_target = target;
             target = -1;
         }
         return money;
