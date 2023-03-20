@@ -386,6 +386,9 @@ int main() {
             Robot robot(0, studio_list[arr_list[i][j-1].first].position);
             robot.angle = angle;
             robot.target = arr_list[i][j].first;
+            if (abs(arr_list[i][j].second - arr_list[i][j-1].second - moveTimePredict(&robot) + 50) < 50){
+                continue;
+            }
             fprintf(warning_output, "%lf %lf %d %d\n",
             abs(delta), angleAdjust(angle_now - angle), arr_list[i][j].second - arr_list[i][j-1].second, moveTimePredict(&robot));
             angle = angle_now;

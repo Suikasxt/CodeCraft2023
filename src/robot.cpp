@@ -1,7 +1,7 @@
 #include "robot.h"
 #include "main.h"
 #include <stdio.h>
-#include <math.h>
+#include <cmath>
 
 Robot::Robot(int _id, Point _position)
 :id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
@@ -54,6 +54,7 @@ void Robot::goToTargetStudio(Studio* studio){
             }
         }
     }
+
     setVelocity(v);
 }
 
