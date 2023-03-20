@@ -7,7 +7,7 @@
 #include <algorithm>
 #include "main.h"
 #include "heap.h"
-#include <queue>
+#include <stack>
 
 vector<Studio> studio_list;
 vector<Robot> robot_list;
@@ -17,6 +17,7 @@ int money = 200000;
 int frameID = 0;
 char map[110][110];
 int robot_target[4];
+stack<int> robot_target_stack[4];
 vector<pair<int, int> > arr_list[4];
 void readUntilOK(){
     int nof_studio;
@@ -121,8 +122,8 @@ void search(int width, int time){
     }
     fflush(warning_output);
 #endif
-        if (g->value > max_value && g->road_id != -1){
-            max_value = g->value;
+        if (g->money > max_value && g->road_id != -1){
+            max_value = g->money;
             res_road_id = g->road_id;
         }
         heap.pop(1, 0);
@@ -146,14 +147,14 @@ void search(int width, int time){
             memcpy(tmp, value_list[i], sizeof(tmp));
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
-                if (value_list[i][j] <= tmp[studio_list.size() - 1 - 10]){
+                if (value_list[i][j] <= -INF+EPS){
                     continue;
                 } 
                 Studio* studio = &(g->studio_list[j]);
                 bool co_target = false;
 #ifdef DEBUG_MODE
-    //fprintf(warning_output, "A Test %d %d\n", i, j);
-    //fflush(warning_output);
+    fprintf(warning_output, "A Test %d %d\n", i, j);
+    fflush(warning_output);
 #endif
                 /*for (int k = 0; k < 4; k++){
                     if (j == robot_list[k].target){
@@ -162,7 +163,7 @@ void search(int width, int time){
                 }
                 if (co_target){
                     continue;
-                }*/
+                }
                 if (robot->item && (MATERIAL[studio->type]&(robot->item)) == 0){
                     continue;
                 }
@@ -171,7 +172,7 @@ void search(int width, int time){
                 }
                 if (robot->item == 0 && studio->finish == 0 && studio->time_left == -1){
                     continue;
-                }
+                }*/
                 Game* new_g = new Game(*g);
                 if (robot->item){
                     new_g->robot_list[i].task_now = Task::SELL;
@@ -197,18 +198,31 @@ void search(int width, int time){
         }
     }
     memset(robot_target, -1, sizeof(robot_target));
+    for (int i = 0; i < 4; i++){
+        while (!robot_target_stack[i].empty()) robot_target_stack[i].pop();
+    }
     while (res_road_id!=-1){
         robot_target[road[res_road_id].robot_id] = road[res_road_id].target_id;
+        robot_target_stack[road[res_road_id].robot_id].push(road[res_road_id].target_id);
         res_road_id = road[res_road_id].pre_id;
+    }
+    
+    for (int i = 0; i < 4; i++){
+        stack<int> tmp(robot_target_stack[i]);
+        while (!tmp.empty()){
+            fprintf(stderr, "%d ", tmp.top());
+            tmp.pop();
+        } 
+        fprintf(stderr, "\n");
     }
     //fprintf(stderr, "%d %lf %d\n", frameID, max_value, res_road_id);
 }
 
 void work(){
-    bool redesign = false;
+    /*bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         money += robot->update(studio_list, frameID, true);
-        if (robot->task_now == Task::NONE && frameID > 1){
+        if (robot->task_now == Task::NONE && frameID > 9500){
             redesign = true;
         }
     }
@@ -225,8 +239,13 @@ void work(){
         }else if (robot_target[robot->id] == -1){
             robot->task_now = Task::WAIT;
         }else{
+            if (robot_target_stack[robot->id].empty()){
+                continue;
+            }
+            robot_target[robot->id] = robot_target_stack[robot->id].top();
+            robot_target_stack[robot->id].pop();
             robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
-            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+            fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
         }
     }
     #ifdef DEBUG_MODE
@@ -235,15 +254,14 @@ void work(){
         }
         fflush(warning_output);
     #endif
-    /*
+    */
+    
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         money += robot->update(studio_list, frameID, true);
     }
     if (frameID == 1){
-        Game g(studio_list, robot_list, frameID, money);
-        g.greedyWork();
         for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-            robot->dispatch(&studio_list[g.robot_list[robot->id].target]);
+            robot->dispatch(&studio_list[robot_target[robot->id]]);
         }
     }
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
@@ -251,6 +269,9 @@ void work(){
         if (robot->task_now == Task::NONE){
             Game g(studio_list, robot_list, frameID, money);
             int target_id = g.MCTS(robot->id);
+            if (target_id == -1){
+                continue;
+            }
             #ifdef DEBUG_MODE
                 fprintf(warning_output, "Frame: %d, ID: %d, Target: %d\n", frameID, robot->id, target_id);
                 fflush(warning_output);
@@ -261,21 +282,21 @@ void work(){
             robot->dispatch(&studio_list[robot->target], true);
         }
     }
-    */
+    
 
 
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
-            Point last_delta = INF;
-            for (double time = 0.; time < 1; time += 0.05){
+            Point last_delta = (robot_A->position - robot_B->position);
+            for (double time = 0.01; time < 1; time += 0.1){
                 Point next_delta = (robot_A->position - robot_B->position) + (robot_A->velocity - robot_B->velocity) * time;
-                if (abs(next_delta) > (robot_A->getRadius() + robot_B->getRadius())){
-                    continue;
-                }
                 if (abs(next_delta) >= abs(last_delta) - EPS){
                     break;
                 }
                 last_delta = next_delta;
+                if (abs(next_delta) > (robot_A->getRadius() + robot_B->getRadius())){
+                    continue;
+                }
                 Point center = (robot_A->position + robot_B->position + (robot_A->velocity + robot_B->velocity) * time) * 0.5;
                 Point delta_A = center - robot_A->position;
                 Point delta_B = center - robot_B->position;
@@ -283,8 +304,14 @@ void work(){
                 double angle_B = atan2(delta_B.y, delta_B.x);
                 int flag_A = angleAdjust(angle_A - robot_A->angle) > 0? 1: -1;
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
-                robot_A->setAngleV(robot_A->angle_v - flag_A*2);
-                robot_B->setAngleV(robot_B->angle_v - flag_B*2);
+                robot_A->setAngleV(robot_A->angle_v - flag_A*3);
+                robot_B->setAngleV(robot_B->angle_v - flag_B*3);
+                /*if (abs(robot_A->angle_v) < 0.5){
+                    robot_A->setAngleV(robot_A->angle_v - flag_A*1.5);
+                }
+                if (abs(robot_B->angle_v) < 0.5){
+                    robot_B->setAngleV(robot_B->angle_v - flag_B*1.5);
+                }*/
 #ifdef DEBUG_MODE
                 fprintf(warning_output, "Collision %d %d time: %lf center: %lf %lf angle: %lf %lf\n", robot_A->id, robot_B->id, time, center.x, center.y, angle_A, angle_B);
                 fprintf(warning_output, "%lf %lf\n", abs(next_delta), abs(last_delta));
@@ -321,15 +348,15 @@ int main() {
     }
 #ifdef DEBUG_MODE
     for (int i = 0; i < 4; i++){
-        int angle = 0;
+        double angle = 0;
         for (int j = 1; j < arr_list[i].size(); j++){
             Point delta = studio_list[arr_list[i][j].first].position - studio_list[arr_list[i][j-1].first].position;
             double angle_now = atan2(delta.y, delta.x);
             Robot robot(0, studio_list[arr_list[i][j-1].first].position);
             robot.angle = angle;
             robot.target = arr_list[i][j].first;
-            fprintf(warning_output, "%d %lf %lf %d\n",
-            arr_list[i][j].second - arr_list[i][j-1].second, abs(delta), angleAdjust(angle_now - angle), moveTimePredict(&robot));
+            fprintf(warning_output, "%lf %lf %d %d\n",
+            abs(delta), angleAdjust(angle_now - angle), arr_list[i][j].second - arr_list[i][j-1].second, moveTimePredict(&robot));
             angle = angle_now;
         }
     }

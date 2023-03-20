@@ -4,11 +4,16 @@
 
 int moveTimePredict(Robot* robot){
     Studio* studio = &(studio_list[robot->target]);
-    Point delta = robot->position - studio->position;
+    Point delta = studio->position - robot->position;
     double dist = abs(delta);
     double angle = atan2(delta.y, delta.x);
-    double time = dist/6 + abs(angleAdjust(angle - robot->angle))/M_PI;
-    return int((time+1) * FRAME_PRE_SEC); //To be adjust
+    double time = dist/6;
+    double angle_delta = abs(angleAdjust(angle - robot->angle));
+    if (angle_delta > 1){
+        time += (angle_delta-1)/M_PI;
+        angle_delta = 1;
+    }
+    return int((time + angle_delta*0.4) * FRAME_PRE_SEC); //To be adjust
 }
 
 Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money)
@@ -16,7 +21,7 @@ Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameI
 
 void Game::calcValue(){
     if (frameID > 8800){
-        value = money*100;
+        value = money*1000;
         return;
     }
     value = money - frameID*20;
@@ -38,7 +43,7 @@ void Game::calcValue(){
             value += (VALUE[studio->type] - COST[studio->type]) * 0.5;
         }
         if (studio->time_left != -1 && studio->type < 8 && studio->type > 3){
-            value += (VALUE[studio->type] - COST[studio->type]) * 10;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.3;
         }
     }
 }
@@ -163,6 +168,10 @@ void Game::greedyWork(double value_list[4][50]){
         }
         for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
             double value = -abs(robot->position - studio->position) - robot->id*1000;
+            if (robot->item == 0 && studio->type <= 7){
+                value += item_require[studio->type] * 0.0005;
+            }
+            value -= (studio->type > 7)*100;
             work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
         }
     }
@@ -221,8 +230,8 @@ void Game::greedyWork(double value_list[4][50]){
 
 int Game::MCTS(int robot_id){
     assert(robot_list[robot_id].task_now == Task::NONE);
-    int max_value = -INF;
-    int action;
+    double max_value = money;
+    int action = -1;
     
     double value_list[4][50];
     for (int i = 0; i < 4; i++){
@@ -236,22 +245,20 @@ int Game::MCTS(int robot_id){
     memcpy(tmp, value_list[robot_id], sizeof(tmp));
     sort(tmp, tmp+studio_list.size());
     for (int j = 0; j < studio_list.size(); j++){
-        if (value_list[robot_id][j] == -INF){
-            continue;
-        }
-        if (value_list[robot_id][j] <= tmp[studio_list.size() - 1 - 3]){
+        if (value_list[robot_id][j] <= tmp[studio_list.size() - 1 - 2] || value_list[robot_id][j] <= -INF+EPS){
             continue;
         } 
         Game g(*this);
         g.robot_list[robot_id].dispatch(&(g.studio_list[j]));
-        while (g.frameID < min(9000, frameID + 1000)){
+        while (g.frameID < min(9000, frameID + 2000)){
             g.greedyWork();
             g.passTime(g.nextTimeStep());
         }
-        value_list[robot_id][j] = g.money * 0.1;
+        value_list[robot_id][j] = g.money;
 
         #ifdef DEBUG_MODE
-            fprintf(warning_output, "Frame: %d, ID: %d, Target: %d, Money: %d %d, Value: %lf\n", frameID, robot_id, j, g.money, g.money, value_list[robot_id][j]);
+            fprintf(warning_output, "Frame: %d, ID: %d, Target: %d, Money: %d, Value: %lf\n", frameID, robot_id, j, g.money, value_list[robot_id][j]);
+            fprintf(stderr, "Frame: %d, ID: %d, Target: %d, Money: %d, Value: %lf\n", frameID, robot_id, j, g.money, value_list[robot_id][j]);
             fflush(warning_output);
         #endif
 
@@ -260,5 +267,6 @@ int Game::MCTS(int robot_id){
             action = j;
         }
     }
+    fprintf(stderr, "Frame: %d, ID: %d, Target: %d, Value: %lf %d\n", frameID, robot_id, action, max_value, money);
     return action;
 }
