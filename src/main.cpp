@@ -163,7 +163,7 @@ void search(int width, int time){
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
                 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-                int search_width_K = 3;
+                int search_width_K = 4;
                 if (value_list[i][j] < tmp[g->studio_list.size() - search_width_K] || value_list[i][j] <= -INF+EPS){
                     continue;
                 }
@@ -220,8 +220,8 @@ void search(int width, int time){
 int last_design = -INF;
 void work(){
     //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
-    int interval = 1000;
-    int beam_width = 50000;
+    int interval = 500;
+    int beam_width = 100000;
     bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now == Task::WAIT){
@@ -240,12 +240,9 @@ void work(){
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now != Task::NONE){
             robot->dispatch(&(studio_list[robot->target]), true);
-        }else if (robot_target_stack[robot->id].empty()){
+        }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
             robot->task_now = Task::WAIT;
         }else{
-            if (robot_target_stack[robot->id].empty()){
-                continue;
-            }
             robot_target[robot->id] = robot_target_stack[robot->id].top();
             robot_target_real[robot->id].push_back(robot_target[robot->id]);
             robot_target_stack[robot->id].pop();
@@ -312,7 +309,7 @@ void work(){
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
                 robot_A->setAngleV(robot_A->angle_v - flag_A*3);
                 robot_B->setAngleV(robot_B->angle_v - flag_B*3);
-                if (time < 0.1){
+                if (time < 0.2){
                     robot_A->setAngleV(robot_A->angle_v - flag_A*2);
                     robot_B->setAngleV(robot_B->angle_v - flag_B*2);
                 }
@@ -352,7 +349,6 @@ int main() {
                 while (!robot_target_stack[j].empty()) robot_target_stack[j].pop();
                 int k = WORK_LIST_LENGTH - 1;
                 while (PRE_WORK_DATA[i][j][k] != -1) k--;
-                fprintf(stderr, "%d %d %d\n", k, j, PRE_WORK_DATA[i][j][k]);
                 while (k>=0){
                     robot_target_stack[j].push(PRE_WORK_DATA[i][j][k]);
                     k--;
@@ -376,6 +372,7 @@ int main() {
         work();
 #ifdef DEBUG_MODE
         fprintf(warning_output, "End frame ID: %d, money: %d, clock: %.6lfs %lf %lf\n", frameID, money, double(clock())/CLOCKS_PER_SEC, robot_list[0].position.x, robot_list[0].position.y);
+        fflush(warning_output);
 #endif
         printf("OK\n", frameID);
 
