@@ -203,7 +203,7 @@ void search(int width, int time){
         }
         res_road_id = road[res_road_id].pre_id;
     }
-    
+#ifdef DEBUG_MODE
     fprintf(stderr, "{%d, %d, %d}\n", studio_list.size(), studio_list[0].type, studio_list[1].type);
     for (int i = 0; i < 4; i++){
         stack<int> tmp(robot_target_stack[i]);
@@ -215,6 +215,7 @@ void search(int width, int time){
         fprintf(stderr, "},\n");
     }
     fprintf(stderr, "FrameID %d Except money: %lf\n", frameID, max_value);
+#endif
 }
 
 int last_design = -INF;
@@ -243,7 +244,7 @@ void work(){
         }else if (robot_target_stack[robot->id].empty()){
             robot->task_now = Task::WAIT;
         }else{
-            if (robot_target_stack[robot->id].empty()){
+            if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
                 continue;
             }
             robot_target[robot->id] = robot_target_stack[robot->id].top();
@@ -312,7 +313,7 @@ void work(){
                 int flag_B = angleAdjust(angle_B - robot_B->angle) > 0? 1: -1;
                 robot_A->setAngleV(robot_A->angle_v - flag_A*3);
                 robot_B->setAngleV(robot_B->angle_v - flag_B*3);
-                if (time < 0.1){
+                if (time < (map_num==3?0.1:0.2)){
                     robot_A->setAngleV(robot_A->angle_v - flag_A*2);
                     robot_B->setAngleV(robot_B->angle_v - flag_B*2);
                 }
@@ -345,14 +346,14 @@ int main() {
             map_num = i+1;
             //这个开关用来切换计算模式还是推理模式，break开了就是本地计算，最后会打一个结果到warning.txt，从里面把数据贴到data.h就可以
 #ifdef _LOCAL
-            break;
+            //break;
 #endif
             pre_work = true;
             for (int j = 0; j < 4; j++){
                 while (!robot_target_stack[j].empty()) robot_target_stack[j].pop();
                 int k = WORK_LIST_LENGTH - 1;
                 while (PRE_WORK_DATA[i][j][k] != -1) k--;
-                fprintf(stderr, "%d %d %d\n", k, j, PRE_WORK_DATA[i][j][k]);
+                //fprintf(stderr, "%d %d %d\n", k, j, PRE_WORK_DATA[i][j][k]);
                 while (k>=0){
                     robot_target_stack[j].push(PRE_WORK_DATA[i][j][k]);
                     k--;
