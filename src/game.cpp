@@ -14,7 +14,7 @@ int moveTimePredict(Robot* robot){
         time += (angle_delta-1)/M_PI;
         angle_delta = 1;
     }
-    return int((time + angle_delta*0.4) * FRAME_PRE_SEC); //To be adjust
+    return int((time + angle_delta*0.4 + (map_num==3 ? 0.3 : 0)) * FRAME_PRE_SEC); //To be adjust
 }
 
 Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money)
@@ -25,7 +25,7 @@ void Game::calcValue(){
         value = money*1000;
         return;
     }
-    value = money - frameID*20;
+    value = money - frameID;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->item){
             int item_id = 0;
@@ -270,7 +270,7 @@ void Game::greedyWork(double value_list[4][50]){
                 sell_expect[studio->id][item_id]++;
             }
             if (value_list){
-                value_list[robot->id][studio->id] = -(work->first) + min(space_left - 1, 0)*100000;
+                value_list[robot->id][studio->id] = -(work->first) + min(space_left - 1, 0)*10000;
             }
         }else{
             if (studio->type > 7){
@@ -285,7 +285,7 @@ void Game::greedyWork(double value_list[4][50]){
                 item_require[studio->type]--;
             }
             if (value_list){
-                value_list[robot->id][studio->id] = -(work->first) + min(min(item_left - 1, item_require[studio->type] - 1), 0)*100000;
+                value_list[robot->id][studio->id] = -(work->first) + min(min(item_left - 1, item_require[studio->type] - 1), 0)*10000;
             }
         }
     }

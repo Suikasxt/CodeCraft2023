@@ -143,7 +143,7 @@ int Robot::sell(vector<Studio> &studio_list, int frameID, bool output){
     int item_id = 0;
     for (int x=(item_sell>>1); x; x>>=1) item_id++;
     flushTimeS(frameID);
-    money += int(VALUE[item_id] * 1 * collision_s);
+    money += int(VALUE[item_id] * time_s * collision_s);
     return money;
 }
 void Robot::destroy(){

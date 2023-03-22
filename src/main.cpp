@@ -23,6 +23,11 @@ vector<int> robot_target_real[4];
 vector<pair<int, int> > arr_list[4];
 bool pre_work = false;
 int map_num = 0;
+//本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
+int interval = 500;
+int beam_width = 5000;
+//每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
+int search_width_K = 2;
 void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
@@ -117,16 +122,9 @@ void search(int width, int time){
     heap.push(g);
     double max_value = -INF;
     int res_road_id = -1;
-#ifdef DEBUG_MODE
-    fprintf(warning_output, "\n\nSize %d %d\n", heap.size, res_road_id);
-    fprintf(warning_output, "\n\nFrame: %d, money: %d, time: %d, value: %lf\n", g->frameID, g->money, g->nextTimeStep(), g->value);
-    for (int i = 0; i < 4; i++){
-        fprintf(warning_output, "ID: %d, Task: %d, Target: %d, Item: %d\n", i, g->robot_list[i].task_now, g->robot_list[i].target, g->robot_list[i].item);
-    }
-    fflush(warning_output);
-#endif
     while (heap.size){
         Game* g = new Game(*heap.top());
+        //fprintf(stderr, "%d\n", g->frameID);
         if (g->money > max_value && g->road_id != -1){
             max_value = g->money;
             res_road_id = g->road_id;
@@ -134,6 +132,7 @@ void search(int width, int time){
         heap.pop(1, 0);
         g->passTime(g->nextTimeStep());
         if (g->frameID > max_time){
+            delete g;
             continue;
         }
         double value_list[4][50];
@@ -150,20 +149,9 @@ void search(int width, int time){
                 continue;
             }
             double tmp[50];
-            /*for (int k = 0; k < 4; k++){
-                if (k == i) continue;
-                if (robot_list[k].target != -1){
-                    value_list[i][robot_list[k].target] -= 1000;
-                }
-                if (robot_list[k].last_target != -1){
-                    value_list[i][robot_list[k].last_target] -= 1000;
-                }
-            }*/
             memcpy(tmp, value_list[i], sizeof(tmp));
             sort(tmp, tmp+studio_list.size());
             for (int j = 0; j < g->studio_list.size(); j++){
-                //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-                int search_width_K = 4;
                 if (value_list[i][j] < tmp[g->studio_list.size() - search_width_K] || value_list[i][j] <= -INF+EPS){
                     continue;
                 }
@@ -191,6 +179,7 @@ void search(int width, int time){
             }
             break;
         }
+        delete g;
     }
     memset(robot_target, -1, sizeof(robot_target));
     for (int i = 0; i < 4; i++){
@@ -214,15 +203,12 @@ void search(int width, int time){
         } 
         fprintf(stderr, "},\n");
     }
-    fprintf(stderr, "FrameID %d Except money: %lf\n", frameID, max_value);
 #endif
+    fprintf(stderr, "FrameID %d Except money: %lf\n", frameID, max_value);
 }
 
 int last_design = -INF;
 void work(){
-    //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
-    int interval = 500;
-    int beam_width = 100000;
     bool redesign = false;
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->task_now == Task::WAIT){
@@ -253,19 +239,13 @@ void work(){
                 robot_target_real[robot->id].push_back(robot_target[robot->id]);
                 robot_target_stack[robot->id].pop();
                 robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
-                break;
+                //break;
                 delta_money = robot->update(studio_list, frameID, true);
                 money += delta_money;
-            }while(delta_money != 0);
-            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+            }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top() != -1);
+            //fprintf(stderr, "%d item %d dispatch %d %d Money: %d\n", frameID, robot->item, robot->id, robot->target, money);
         }
     }
-    #ifdef DEBUG_MODE
-        for (int i = 0; i < 4; i++){
-            fprintf(warning_output, "ID: %d, Target: %d\n", i, robot_list[i].target);
-        }
-        fflush(warning_output);
-    #endif
     
     //碰撞检测
     stack<int> rt[4];
@@ -340,8 +320,8 @@ void work(){
                     
                     double dist_2_target = 0;
 #ifdef DEBUG_MODE
-                    fprintf(warning_output, "%d %lf %lf %d : %lf %lf\n", robot_id, add_angle_v, add_pos_v, add_frame, dist_2_target, min_dist_2_target);
-                    fflush(warning_output);
+                    //fprintf(warning_output, "%d %lf %lf %d : %lf %lf\n", robot_id, add_angle_v, add_pos_v, add_frame, dist_2_target, min_dist_2_target);
+                    //fflush(warning_output);
 #endif
                     if (collision){
                         //continue;
@@ -374,7 +354,7 @@ void work(){
             }
         }
 #ifdef DEBUG_MODE
-        fprintf(warning_output, "priority: %lf id: %d solution: (%lf %lf %d) : %lf\n", dist_2_target_list[i].first, robot_id, robot_list[robot_id].additional_angle_v, robot_list[robot_id].additional_pos_v, robot_list[robot_id].additional_frame_num, min_dist_2_target);
+        //fprintf(warning_output, "priority: %lf id: %d solution: (%lf %lf %d) : %lf\n", dist_2_target_list[i].first, robot_id, robot_list[robot_id].additional_angle_v, robot_list[robot_id].additional_pos_v, robot_list[robot_id].additional_frame_num, min_dist_2_target);
 #endif
     }
 
@@ -441,7 +421,7 @@ int main() {
             map_num = i+1;
             //这个开关用来切换计算模式还是推理模式，break开了就是本地计算，最后会打一个结果到warning.txt，从里面把数据贴到data.h就可以
 #ifdef _LOCAL
-            //break;
+            break;
 #endif
             pre_work = true;
             for (int j = 0; j < 4; j++){
