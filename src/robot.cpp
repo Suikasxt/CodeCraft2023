@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <math.h>
 
+const double ROBOT_DENSITY = 20;
+const double ROBOT_FORCE = 250;
+const double ROBOT_MOMENT = 50;
+
 Robot::Robot(int _id, Point _position)
 :id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
     data_frameID = 0;
@@ -11,6 +15,8 @@ Robot::Robot(int _id, Point _position)
     angle_v = 0;
     time_s = 0;
     collision_s = 0;
+    original_angle_v = 0;
+    additional_frame_num = 0;
 };
 
 void Robot::readFromString(char input[])
@@ -22,19 +28,21 @@ void Robot::readFromString(char input[])
         item = 1<<item;
     }
     data_frameID = frameID;
+    original_angle_v = angle_v;
+    original_velocity = velocity;
 }
 
 void Robot::outputToString(char output[]){
-    sprintf(output, "Robot id: %d \nstudio_id: %d item: %d \ntime_s: %.3lf collision_s: %.3lf \nangle: %.3lf angle_v: %.3lf \nposition: (%.3lf, %.3lf) velocity: (%.3lf, %.3lf)\ntask: %d target: %d\n\n\n",
-            id, studio_id, item, time_s, collision_s, angle, angle_v, position.x, position.y, velocity.x, velocity.y, task_now, target);
+    sprintf(output, "Robot id: %d \nstudio_id: %d item: %d \ntime_s: %.3lf collision_s: %.3lf \nangle: %.6lf angle_v: %.6lf \nposition: (%.6lf, %.6lf) velocity: (%.6lf, %.6lf)\ntask: %d target: %d\n\n\n",
+            id, studio_id, item, time_s, collision_s, angle, original_angle_v, position.x, position.y, velocity.x, velocity.y, task_now, target);
 }
 
 
-void Robot::goToTargetStudio(Studio* studio){
+void Robot::goToTargetStudio(Studio* studio, bool output){
     Point delta = studio->position - position;
     double target_angle = atan2(delta.y, delta.x);
     double angle_delta = angleAdjust(target_angle - angle);
-    setAngleV(angle_delta * 5);
+    setAngleV(angle_delta * 5, output);
 
     double v = 0;
     if (fabs(angle_delta) < 1){
@@ -49,21 +57,18 @@ void Robot::goToTargetStudio(Studio* studio){
             if (abs(delta) <= 2){
                 v = 0;
             }
-            if (abs(delta) < 0.5){
+            if (abs(delta) < 0.6){
                 v = -2;
             }
         }
     }
 
-    setVelocity(v);
+    setVelocity(v, output);
 }
 
 void Robot::stop(){
-    angle_v = 0;
-    double v = 0;
-    velocity = Point(sin(angle), cos(angle))*v;
-    printf("rotate %d %lf\n", id, angle_v);
-    printf("forward %d %lf\n", id, v);
+    setVelocity(0);
+    setAngleV(0);
 }
 
 int Robot::buy(vector<Studio> &studio_list, int frameID, bool output){
@@ -96,6 +101,7 @@ int Robot::buy(vector<Studio> &studio_list, int frameID, bool output){
     item = PRODUCT[studio_list[studio_id].type];
     pick_up_time = frameID;
     studio_list[studio_id].finish = 0;
+    studio_list[studio_id].update();
     for (int i = 1; i <= 7; i++){
         if ((item>>i)&1){
             money -= COST[i];
@@ -132,6 +138,7 @@ int Robot::sell(vector<Studio> &studio_list, int frameID, bool output){
     }
     item ^= item_sell;
     studio_list[studio_id].item ^= item_sell;
+    studio_list[studio_id].update();
     
     int item_id = 0;
     for (int x=(item_sell>>1); x; x>>=1) item_id++;
@@ -185,6 +192,56 @@ int Robot::update(vector<Studio> &studio_list, int frameID, bool output){
     return money;
 }
 
+
+void Robot::physicalUpdate(double time){
+    double r = getRadius();
+    double mass = M_PI * r * r * ROBOT_DENSITY;
+    double inertia = mass * r * r / 2;
+    double angle_v_a = ROBOT_MOMENT / inertia;
+    double velocity_a = ROBOT_FORCE / mass;
+
+    double original_v = abs(original_velocity);
+    double v = abs(velocity);
+    if (abs(v - original_v) > velocity_a * time){
+        if (v < original_v){
+            v = original_v - velocity_a * time;
+        }else{
+            v = original_v + velocity_a * time;
+        }
+    }
+    velocity = Point(cos(angle), sin(angle)) * v;
+
+
+    if (abs(angle_v - original_angle_v) > angle_v_a * time){
+        if (angle_v < original_angle_v){
+            angle_v = original_angle_v - angle_v_a * time;
+        }else{
+            angle_v = original_angle_v + angle_v_a * time;
+        }
+    }
+
+
+    position = position + original_velocity*time;
+    angle = angleAdjust(angle + original_angle_v*time);
+
+    
+    original_velocity = velocity;
+    original_angle_v = angle_v;
+
+    if (position.x < r){
+        position.x = r;
+    }
+    if (position.y < r){
+        position.y = r;
+    }
+    if (position.x > 50 - r){
+        position.x = 50 - r;
+    }
+    if (position.y > 50 - r){
+        position.y = 50 - r;
+    }
+}
+
 void Robot::dispatch(Studio* studio, bool output){
     if (item){
         task_now = Task::SELL;
@@ -192,13 +249,11 @@ void Robot::dispatch(Studio* studio, bool output){
         task_now = Task::BUY;
     }
     target = studio->id;
-    if (output){
-        goToTargetStudio(studio);
-    }
+    goToTargetStudio(studio, output);
 }
 
 
-void Robot::setAngleV(double _angle_v){
+void Robot::setAngleV(double _angle_v, bool output){
     angle_v = _angle_v;
     if (angle_v > M_PI){
         angle_v = M_PI;
@@ -206,9 +261,11 @@ void Robot::setAngleV(double _angle_v){
     if (angle_v < -M_PI){
         angle_v = -M_PI;
     }
-    printf("rotate %d %lf\n", id, angle_v);
+    if (output){
+        printf("rotate %d %lf\n", id, angle_v);
+    }
 }
-void Robot::setVelocity(double v){
+void Robot::setVelocity(double v, bool output){
     if (v >= 6){
         v = 6;
     }
@@ -216,7 +273,9 @@ void Robot::setVelocity(double v){
         v = -2;
     }
     velocity = Point(cos(angle), sin(angle))*v;
-    printf("forward %d %lf\n", id, v);
+    if (output){
+        printf("forward %d %lf\n", id, v);
+    }
 }
 
 double Robot::getRadius(){
@@ -226,5 +285,5 @@ double Robot::getRadius(){
 
 void Robot::flushTimeS(int frameID){
     double rate = 1 - 1.*(frameID - pick_up_time) / 9000;
-    //time_s = 0.8 + 0.2*(1-sqrt(1-rate*rate));
+    time_s = 0.8 + 0.2*(1-sqrt(1-rate*rate));
 }

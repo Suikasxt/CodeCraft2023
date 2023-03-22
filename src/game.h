@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #include <vector>
+#include <stack>
 #include "main.h"
 #include "studio.h"
 #include "robot.h"
@@ -31,6 +32,7 @@ public:
     int nextTimeStep();
     void passTime(int time);
     void greedyWork(double value_list[4][50] = NULL);
+    void physicalSimulation(stack<int> robot_target_stack[4]);
     int MCTS(int robot_id);
 };
 

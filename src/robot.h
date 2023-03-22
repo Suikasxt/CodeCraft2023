@@ -23,9 +23,16 @@ public:
     double collision_s;
     double angle;
     double angle_v;
-    int last_target;
+    double original_angle_v;
     Point position;
     Point velocity;
+    Point original_velocity;
+
+    int last_target;
+
+    double additional_angle_v;
+    double additional_pos_v;
+    int additional_frame_num;
 
     Robot(int _id, Point _position);
     void readFromString(char input[]);
@@ -34,14 +41,15 @@ public:
     int buy(vector<Studio>& studio_list, int frameID, bool output = false);
     int sell(vector<Studio>& studio_list, int frameID, bool output = false);
     void destroy();
-    void goToTargetStudio(Studio* studio);
+    void goToTargetStudio(Studio* studio, bool output=false);
     
     int update(vector<Studio>& studio_list, int frameID, bool output = false);
     void dispatch(Studio* studio, bool output = false);
 
-    void setAngleV(double _angle_v);
-    void setVelocity(double _angle_v);
+    void setAngleV(double _angle_v, bool output=false);
+    void setVelocity(double _angle_v, bool output=false);
     double getRadius();
     void flushTimeS(int frameID);
+    void physicalUpdate(double time);
 };
 #endif

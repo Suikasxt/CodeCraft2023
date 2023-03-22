@@ -247,10 +247,16 @@ void work(){
             if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
                 continue;
             }
-            robot_target[robot->id] = robot_target_stack[robot->id].top();
-            robot_target_real[robot->id].push_back(robot_target[robot->id]);
-            robot_target_stack[robot->id].pop();
-            robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
+            int delta_money = 0;
+            do{
+                robot_target[robot->id] = robot_target_stack[robot->id].top();
+                robot_target_real[robot->id].push_back(robot_target[robot->id]);
+                robot_target_stack[robot->id].pop();
+                robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
+                break;
+                delta_money = robot->update(studio_list, frameID, true);
+                money += delta_money;
+            }while(delta_money != 0);
             //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
         }
     }
@@ -261,37 +267,118 @@ void work(){
         fflush(warning_output);
     #endif
     
-    /*
+    //碰撞检测
+    stack<int> rt[4];
+    double gap = 0.05;
+    bool collision[4] = {0, 0, 0, 0};
+    pair<double, int> dist_2_target_list[4];
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        money += robot->update(studio_list, frameID, true);
-    }
-    if (frameID == 1){
-        for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-            robot->dispatch(&studio_list[robot_target[robot->id]]);
+        if (robot->target == -1 || (studio_list[robot->target].item&robot->item)!=0){
+            dist_2_target_list[robot->id] = make_pair(INF, robot->id);
+        }else{
+            dist_2_target_list[robot->id] = make_pair(abs(robot->position - studio_list[robot->target].position), robot->id);
         }
     }
-    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
-        //robot->task_now = Task::NONE;
-        if (robot->task_now == Task::NONE){
-            Game g(studio_list, robot_list, frameID, money);
-            int target_id = g.MCTS(robot->id);
-            if (target_id == -1){
-                continue;
+    sort(dist_2_target_list, dist_2_target_list+4);
+    Game g(studio_list, robot_list, frameID, money);
+    for (int j = 0; j < 4; j++){
+        rt[j] = robot_target_stack[j];
+    }
+    for (int i = 0; i < 30; i++){
+        g.physicalSimulation(rt);
+        for (auto robot_A = g.robot_list.begin(); robot_A != g.robot_list.end(); robot_A++){
+            for (auto robot_B = robot_A + 1; robot_B != g.robot_list.end(); robot_B++){
+                if (abs(robot_A->position - robot_B->position) < robot_A->getRadius() + robot_B->getRadius() + gap){
+                    collision[robot_A->id] = true;
+                    collision[robot_B->id] = true;
+                }
             }
-            #ifdef DEBUG_MODE
-                fprintf(warning_output, "Frame: %d, ID: %d, Target: %d\n", frameID, robot->id, target_id);
-                fflush(warning_output);
-            #endif
-            robot->dispatch(&studio_list[target_id], true);
-            //fprintf(stderr, "%d dispatch %d %d\n", frameID, robot->id, robot->target);
-        }else if (robot->target != -1){
-            robot->dispatch(&studio_list[robot->target], true);
         }
     }
-    */
-    
+    for (int i = 3; i >= 0; i--){
+        int robot_id = dist_2_target_list[i].second;
+        if (collision[robot_id] == false){
+            continue;
+        }
+        double min_dist_2_target = INF+EPS;
+        for (int add_frame = 0; add_frame <= 30; add_frame += 10){
+            for (double add_pos_v = -2; add_pos_v <= 6+EPS; add_pos_v+=2){
+                for (double add_angle_v = -M_PI; add_angle_v <= M_PI+EPS; add_angle_v += M_PI_2){
+                    if (add_frame == 0 && (abs(add_pos_v) > EPS || abs(add_angle_v) > EPS)){
+                        continue;
+                    }
+                    for (int j = 0; j < 4; j++){
+                        rt[j] = robot_target_stack[j];
+                    }
+                    Game g(studio_list, robot_list, frameID, money);
+                    
+                    for (int k = i-1; k >= 0; k--)
+                    if (collision[dist_2_target_list[k].second]){
+                        g.robot_list[dist_2_target_list[k].second].additional_frame_num = 0;
+                    }
+                    g.robot_list[robot_id].additional_angle_v = add_angle_v;
+                    g.robot_list[robot_id].additional_pos_v = add_pos_v;
+                    g.robot_list[robot_id].additional_frame_num = add_frame;
+                    bool collision = false;
+                    double min_robot_dist = INF;
+                    int f;
+                    for (f = 0; f < 30 && collision==false; f++){
+                        g.physicalSimulation(rt);
+                        //fprintf(stderr, "%d %d %d %d\n", f, robot_id, add_frame, g.robot_list[robot_id].additional_frame_num);
+                        Robot* robot_now = &(g.robot_list[robot_id]);
+                        for (auto robot = g.robot_list.begin(); robot != g.robot_list.end(); robot++){
+                            if (robot->id == robot_id){
+                                continue;
+                            }
+                            double dist = abs(robot->position - robot_now->position);
+                            min_robot_dist = min(min_robot_dist, dist);
+                            if (dist < robot->getRadius() + robot_now->getRadius() + gap){
+                                collision = true;
+                            }
+                        }
+                    }
+                    
+                    double dist_2_target = 0;
+#ifdef DEBUG_MODE
+                    fprintf(warning_output, "%d %lf %lf %d : %lf %lf\n", robot_id, add_angle_v, add_pos_v, add_frame, dist_2_target, min_dist_2_target);
+                    fflush(warning_output);
+#endif
+                    if (collision){
+                        //continue;
+                        dist_2_target += 2e8;
+                        dist_2_target -= f*100;
+                        dist_2_target -= min_robot_dist;
+                    }else{
+                        for (int k = 0; k < 4; k++){
+                            dist_2_target += rt[k].size()*100;
+                            int target = g.robot_list[k].target;
+                            if (target != -1 && (g.studio_list[target].item&g.robot_list[k].item)==0){
+                                dist_2_target += abs(g.studio_list[target].position - g.robot_list[k].position);
+                            }else{
+                                dist_2_target += 100;
+                            }
+                        }
+                        dist_2_target -= min_robot_dist*3;
+                    }
+                    
+                    if (dist_2_target < min_dist_2_target){
+                        min_dist_2_target = dist_2_target;
+                        robot_list[robot_id].additional_angle_v = add_angle_v;
+                        robot_list[robot_id].additional_pos_v = add_pos_v;
+                        robot_list[robot_id].additional_frame_num = add_frame;
+                    }
+                }
+            }
+            if (min_dist_2_target < 1e8){
+                break;
+            }
+        }
+#ifdef DEBUG_MODE
+        fprintf(warning_output, "priority: %lf id: %d solution: (%lf %lf %d) : %lf\n", dist_2_target_list[i].first, robot_id, robot_list[robot_id].additional_angle_v, robot_list[robot_id].additional_pos_v, robot_list[robot_id].additional_frame_num, min_dist_2_target);
+#endif
+    }
 
-
+    /*
     for (auto robot_A = robot_list.begin(); robot_A != robot_list.end(); robot_A++){
         for (auto robot_B = robot_A + 1; robot_B != robot_list.end(); robot_B++){
             Point last_delta = (robot_A->position - robot_B->position);
@@ -333,6 +420,14 @@ void work(){
 #endif
                 break;
             }
+        }
+    }
+    */
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->additional_frame_num){
+            robot->setAngleV(robot->additional_angle_v, true);
+            robot->setVelocity(robot->additional_pos_v, true);
+            robot->additional_frame_num -= 1;
         }
     }
 }

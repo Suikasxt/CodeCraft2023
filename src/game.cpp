@@ -122,7 +122,6 @@ void Game::passTime(int time){
         if (arrive){
             robot->studio_id = studio->id;
             money += robot->update(studio_list, frameID);
-            studio->update();
         }
     }
     if (time > 0){
@@ -131,6 +130,69 @@ void Game::passTime(int time){
                 robot->task_now = Task::NONE;
             }
         }
+    }
+}
+
+void Game::physicalSimulation(stack<int> robot_target_stack[4]){
+    int period_frame = 1;
+    double period_time = 1.*period_frame / FRAME_PRE_SEC;
+
+    frameID += period_frame;
+    
+    for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
+        int time_leaf = period_frame;
+        studio->update();
+        if (studio->time_left == -1){
+            break;
+        }
+        if (studio->time_left > time_leaf){
+            studio->time_left -= time_leaf;
+            time_leaf = 0;
+        }else{
+            time_leaf -= studio->time_left;
+            studio->time_left = 0;
+        }
+        studio->update();
+    }
+
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->target != -1){
+            Studio* studio = &studio_list[robot->target];
+            if (abs(robot->position - studio->position) < 0.4){
+                robot->studio_id = robot->target;
+                money += robot->update(studio_list, frameID);
+            }
+        }
+        if (robot->task_now == Task::WAIT){
+            robot->task_now = Task::NONE;
+        }
+        if (robot->task_now != Task::NONE){
+            robot->dispatch(&(studio_list[robot->target]));
+        }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
+            robot->task_now = Task::WAIT;
+        }else{
+            if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
+                continue;
+            }
+            int delta_money = 0;
+            do{
+                int robot_target = robot_target_stack[robot->id].top();
+                robot_target_stack[robot->id].pop();
+                robot->dispatch(&(studio_list[robot_target]));
+                //break;
+                delta_money = robot->update(studio_list, frameID);
+                money += delta_money;
+            }while(delta_money != 0);
+            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+        }
+    }
+    for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->additional_frame_num){
+            robot->setAngleV(robot->additional_angle_v);
+            robot->setVelocity(robot->additional_pos_v);
+            robot->additional_frame_num -= 1;
+        }
+        robot->physicalUpdate(period_time);
     }
 }
 

@@ -9,7 +9,7 @@
 using namespace std;
 
 #ifdef _LOCAL
-#define DEBUG_MODE
+//#define DEBUG_MODE
 #endif
 #define FRAME_PRE_SEC 50
 #define INF 1e9
