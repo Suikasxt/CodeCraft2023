@@ -269,7 +269,7 @@ void work(){
     
     //碰撞检测
     stack<int> rt[4];
-    double gap = 0.05;
+    double gap = 0.01;
     bool collision[4] = {0, 0, 0, 0};
     pair<double, int> dist_2_target_list[4];
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
@@ -346,8 +346,8 @@ void work(){
                     if (collision){
                         //continue;
                         dist_2_target += 2e8;
-                        dist_2_target -= f*100;
-                        dist_2_target -= min_robot_dist;
+                        dist_2_target -= f*10;
+                        //dist_2_target -= min_robot_dist;
                     }else{
                         for (int k = 0; k < 4; k++){
                             dist_2_target += rt[k].size()*100;

@@ -54,7 +54,7 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
             v = 0;
         }
         if ((studio->item&item)){
-            if (abs(delta) <= 2){
+            if (abs(delta) <= 1.5){
                 v = 0;
             }
             if (abs(delta) < 0.6){
