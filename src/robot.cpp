@@ -42,7 +42,19 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
     Point delta = studio->position - position;
     double target_angle = atan2(delta.y, delta.x);
     double angle_delta = angleAdjust(target_angle - angle);
-    setAngleV(angle_delta * 5, output);
+    setAngleV(angle_delta*5, output);
+    /*double r = getRadius();
+    double mass = M_PI * r * r * ROBOT_DENSITY;
+    double inertia = mass * r * r / 2;
+    double angle_v_a = ROBOT_MOMENT / inertia;
+    double angle_delta_after_stop = angle_delta - fabs(original_angle_v)/angle_v_a*original_angle_v;
+    if (fabs(angle_delta) < 0.1 && original_angle_v < 0.1){
+        setAngleV(angle_delta*10, output);
+    }else if (fabs(angle_delta_after_stop) < 0.1){
+        setAngleV(angle_delta_after_stop/2, output);
+    }else{
+        setAngleV(angle_delta_after_stop > 0 ? M_PI:-M_PI, output); 
+    }*/// To be upgrade
 
     double v = 0;
     if (fabs(angle_delta) < 1){
@@ -261,6 +273,7 @@ void Robot::setAngleV(double _angle_v, bool output){
     if (angle_v < -M_PI){
         angle_v = -M_PI;
     }
+    //fprintf(stderr, "%d %lf\n", id, angle_v);
     if (output){
         printf("rotate %d %lf\n", id, angle_v);
     }

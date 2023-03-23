@@ -25,9 +25,9 @@ bool pre_work = false;
 int map_num = 0;
 //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
 int interval = 500;
-int beam_width = 5000;
+int beam_width = 100;
 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-int search_width_K = 2;
+int search_width_K = 2; //2~5
 void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
@@ -193,7 +193,6 @@ void search(int width, int time){
         res_road_id = road[res_road_id].pre_id;
     }
 #ifdef DEBUG_MODE
-    fprintf(stderr, "{%d, %d, %d}\n", studio_list.size(), studio_list[0].type, studio_list[1].type);
     for (int i = 0; i < 4; i++){
         stack<int> tmp(robot_target_stack[i]);
         fprintf(stderr, "{");
@@ -204,6 +203,7 @@ void search(int width, int time){
         fprintf(stderr, "},\n");
     }
 #endif
+    fprintf(stderr, "{%d, %d, %d}\n", studio_list.size(), studio_list[0].type, studio_list[1].type);
     fprintf(stderr, "FrameID %d Except money: %lf\n", frameID, max_value);
 }
 
@@ -239,7 +239,7 @@ void work(){
                 robot_target_real[robot->id].push_back(robot_target[robot->id]);
                 robot_target_stack[robot->id].pop();
                 robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
-                //break;
+                break;//Not sure
                 delta_money = robot->update(studio_list, frameID, true);
                 money += delta_money;
             }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top() != -1);
@@ -259,7 +259,7 @@ void work(){
             dist_2_target_list[robot->id] = make_pair(abs(robot->position - studio_list[robot->target].position), robot->id);
         }
     }
-    sort(dist_2_target_list, dist_2_target_list+4);
+    sort(dist_2_target_list, dist_2_target_list+4); //确定优先级
     Game g(studio_list, robot_list, frameID, money);
     for (int j = 0; j < 4; j++){
         rt[j] = robot_target_stack[j];
@@ -277,10 +277,12 @@ void work(){
     }
     for (int i = 3; i >= 0; i--){
         int robot_id = dist_2_target_list[i].second;
+        //如果会碰撞
         if (collision[robot_id] == false){
             continue;
         }
         double min_dist_2_target = INF+EPS;
+        //搜索解决方案
         for (int add_frame = 0; add_frame <= 30; add_frame += 10){
             for (double add_pos_v = -2; add_pos_v <= 6+EPS; add_pos_v+=2){
                 for (double add_angle_v = -M_PI; add_angle_v <= M_PI+EPS; add_angle_v += M_PI_2){
@@ -423,6 +425,7 @@ int main() {
 #ifdef _LOCAL
             break;
 #endif
+            //加载打表好的指令序列
             pre_work = true;
             for (int j = 0; j < 4; j++){
                 while (!robot_target_stack[j].empty()) robot_target_stack[j].pop();
