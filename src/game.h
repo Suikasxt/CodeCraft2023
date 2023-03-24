@@ -13,7 +13,8 @@ struct UpdateRoad{
     int pre_id;
     int robot_id;
     int target_id;
-    UpdateRoad(int _pre_id, int _robot_id, int _target_id):pre_id(_pre_id), robot_id(_robot_id), target_id(_target_id){};
+    int action_num;
+    UpdateRoad(int _pre_id, int _robot_id, int _target_id, int _action_num):pre_id(_pre_id), robot_id(_robot_id), target_id(_target_id), action_num(_action_num){};
 };
 
 int moveTimePredict(Robot* robot);
@@ -32,7 +33,7 @@ public:
     int nextTimeStep();
     void passTime(int time);
     void greedyWork(double value_list[4][50] = NULL);
-    void physicalSimulation(stack<int> robot_target_stack[4]);
+    void physicalSimulation(stack<pair<int, int> > robot_target_stack[4]);
     int MCTS(int robot_id);
 };
 

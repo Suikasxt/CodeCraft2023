@@ -5,6 +5,7 @@ Studio::Studio(int _id, int _type, Point _position)
     item = 0;
     time_left = -1;
     finish = 0;
+    action_num = 0;
 };
 
 void Studio::readFromString(char input[]){

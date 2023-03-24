@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <ctime>
 
 int moveTimePredict(Robot* robot){
     Studio* studio = &(studio_list[robot->target]);
@@ -133,31 +134,20 @@ void Game::passTime(int time){
     }
 }
 
-void Game::physicalSimulation(stack<int> robot_target_stack[4]){
+void Game::physicalSimulation(stack<pair<int, int> > robot_target_stack[4]){
     int period_frame = 1;
     double period_time = 1.*period_frame / FRAME_PRE_SEC;
 
     frameID += period_frame;
-    
-    for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-        int time_leaf = period_frame;
-        studio->update();
-        if (studio->time_left == -1){
-            break;
-        }
-        if (studio->time_left > time_leaf){
-            studio->time_left -= time_leaf;
-            time_leaf = 0;
-        }else{
-            time_leaf -= studio->time_left;
-            studio->time_left = 0;
-        }
-        studio->update();
-    }
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->target != -1){
             Studio* studio = &studio_list[robot->target];
+            studio->update();
+            if (studio->time_left > 1){
+                studio->time_left--;
+            }
+            studio->update();
             if (abs(robot->position - studio->position) < 0.4){
                 robot->studio_id = robot->target;
                 money += robot->update(studio_list, frameID);
@@ -167,23 +157,18 @@ void Game::physicalSimulation(stack<int> robot_target_stack[4]){
             robot->task_now = Task::NONE;
         }
         if (robot->task_now != Task::NONE){
-            robot->dispatch(&(studio_list[robot->target]));
-        }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
+            robot->goToTargetStudio(&(studio_list[robot->target]));
+        }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top().first==-1){
             robot->task_now = Task::WAIT;
         }else{
-            if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top()==-1){
-                continue;
-            }
-            int delta_money = 0;
-            do{
-                int robot_target = robot_target_stack[robot->id].top();
+            int delta_money = -1;
+            while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top().first != -1){
+                int robot_target = robot_target_stack[robot->id].top().first;
+                robot->dispatch(&(studio_list[robot_target]), robot_target_stack[robot->id].top().second);
                 robot_target_stack[robot->id].pop();
-                robot->dispatch(&(studio_list[robot_target]));
-                //break;
                 delta_money = robot->update(studio_list, frameID);
                 money += delta_money;
-            }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top() != -1);
-            //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
+            }
         }
     }
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
@@ -196,6 +181,7 @@ void Game::physicalSimulation(stack<int> robot_target_stack[4]){
     }
 }
 
+extern int time_count;
 void Game::greedyWork(double value_list[4][50]){
     int buy_expect[52] = {};
     int sell_expect[52][10] = {};
@@ -206,8 +192,9 @@ void Game::greedyWork(double value_list[4][50]){
     int item_require[8]={};
     
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-        for (int i = 1; i <= 7; i++){
-            if (((MATERIAL[studio->type]^studio->item)>>i)&1){
+        int x = MATERIAL[studio->type]^studio->item;
+        for (int i = 0; x; i++, x>>=1){
+            if (x&1){
                 item_require[i]++;
             }
         }
@@ -237,7 +224,7 @@ void Game::greedyWork(double value_list[4][50]){
             continue;
         }
         for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-            double value = -abs(robot->position - studio->position) - robot->id*1000;
+            double value = -abs(robot->position - studio->position) - robot->id*000;
             if (robot->item == 0 && studio->type <= 7){
                 value += item_require[studio->type] * 0.0005;
             }
@@ -266,7 +253,7 @@ void Game::greedyWork(double value_list[4][50]){
             space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
             space_left -= sell_expect[studio->id][item_id];
             if (space_left > 0 && value_list == NULL){
-                robot->dispatch(studio);
+                robot->dispatch(studio, -1);
                 sell_expect[studio->id][item_id]++;
             }
             if (value_list){
@@ -283,7 +270,7 @@ void Game::greedyWork(double value_list[4][50]){
                 item_left += 0.5;
             }
             if (item_left > 0 && item_require[studio->type] > 0 && value_list == NULL){
-                robot->dispatch(studio);
+                robot->dispatch(studio, -1);
                 buy_expect[studio->id]++;
                 item_require[studio->type]--;
             }
@@ -297,47 +284,4 @@ void Game::greedyWork(double value_list[4][50]){
             robot->task_now = Task::WAIT;
         }
     }
-}
-
-int Game::MCTS(int robot_id){
-    assert(robot_list[robot_id].task_now == Task::NONE);
-    double max_value = money;
-    int action = -1;
-    
-    double value_list[4][50];
-    for (int i = 0; i < 4; i++){
-        for (int j = 0; j < 50; j++){
-            value_list[i][j] = -INF;
-        }
-    }
-    
-    greedyWork(value_list);
-    double tmp[50];
-    memcpy(tmp, value_list[robot_id], sizeof(tmp));
-    sort(tmp, tmp+studio_list.size());
-    for (int j = 0; j < studio_list.size(); j++){
-        if (value_list[robot_id][j] <= tmp[studio_list.size() - 1 - 2] || value_list[robot_id][j] <= -INF+EPS){
-            continue;
-        } 
-        Game g(*this);
-        g.robot_list[robot_id].dispatch(&(g.studio_list[j]));
-        while (g.frameID < min(9000, frameID + 2000)){
-            g.greedyWork();
-            g.passTime(g.nextTimeStep());
-        }
-        value_list[robot_id][j] = g.money;
-
-        #ifdef DEBUG_MODE
-            fprintf(warning_output, "Frame: %d, ID: %d, Target: %d, Money: %d, Value: %lf\n", frameID, robot_id, j, g.money, value_list[robot_id][j]);
-            fprintf(stderr, "Frame: %d, ID: %d, Target: %d, Money: %d, Value: %lf\n", frameID, robot_id, j, g.money, value_list[robot_id][j]);
-            fflush(warning_output);
-        #endif
-
-        if (max_value < value_list[robot_id][j]){
-            max_value = value_list[robot_id][j];
-            action = j;
-        }
-    }
-    fprintf(stderr, "Frame: %d, ID: %d, Target: %d, Value: %lf %d\n", frameID, robot_id, action, max_value, money);
-    return action;
 }

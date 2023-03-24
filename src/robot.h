@@ -18,6 +18,7 @@ public:
     int data_frameID;
     int pick_up_time;
     int target;
+    int target_action_num;
     Task task_now;
     double time_s;
     double collision_s;
@@ -44,7 +45,7 @@ public:
     void goToTargetStudio(Studio* studio, bool output=false);
     
     int update(vector<Studio>& studio_list, int frameID, bool output = false);
-    void dispatch(Studio* studio, bool output = false);
+    void dispatch(Studio* studio, int action_num, bool output = false);
 
     void setAngleV(double _angle_v, bool output=false);
     void setVelocity(double _angle_v, bool output=false);

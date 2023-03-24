@@ -11,6 +11,7 @@ public:
     Point position;
     int time_left;
     int item;
+    int action_num;
     bool finish;
     Studio(int _id, int _type, Point _position);
     void readFromString(char input[]);

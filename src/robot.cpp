@@ -17,6 +17,7 @@ Robot::Robot(int _id, Point _position)
     collision_s = 0;
     original_angle_v = 0;
     additional_frame_num = 0;
+    target_action_num = -1;
 };
 
 void Robot::readFromString(char input[])
@@ -65,11 +66,8 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
         if (abs(delta) < 0.4){
             v = 0;
         }
-        if ((studio->item&item)){
-            if (abs(delta) <= 1.5){
-                v = 0;
-            }
-            if (abs(delta) < 0.6){
+        if (studio->action_num < target_action_num){
+            if (abs(delta) < 0.8){
                 v = -2;
             }
         }
@@ -113,6 +111,7 @@ int Robot::buy(vector<Studio> &studio_list, int frameID, bool output){
     item = PRODUCT[studio_list[studio_id].type];
     pick_up_time = frameID;
     studio_list[studio_id].finish = 0;
+    studio_list[studio_id].action_num++;
     studio_list[studio_id].update();
     for (int i = 1; i <= 7; i++){
         if ((item>>i)&1){
@@ -150,6 +149,7 @@ int Robot::sell(vector<Studio> &studio_list, int frameID, bool output){
     }
     item ^= item_sell;
     studio_list[studio_id].item ^= item_sell;
+    studio_list[studio_id].action_num++;
     studio_list[studio_id].update();
     
     int item_id = 0;
@@ -177,6 +177,9 @@ int Robot::update(vector<Studio> &studio_list, int frameID, bool output){
         return money;
     }
     Studio* target_studio = &(studio_list[target]);
+    if (target_studio->action_num < target_action_num){
+        return money;
+    }
     if (task_now == Task::BUY && target_studio->finish == 0){
         return money;
     }
@@ -239,28 +242,16 @@ void Robot::physicalUpdate(double time){
     
     original_velocity = velocity;
     original_angle_v = angle_v;
-
-    if (position.x < r){
-        position.x = r;
-    }
-    if (position.y < r){
-        position.y = r;
-    }
-    if (position.x > 50 - r){
-        position.x = 50 - r;
-    }
-    if (position.y > 50 - r){
-        position.y = 50 - r;
-    }
 }
 
-void Robot::dispatch(Studio* studio, bool output){
+void Robot::dispatch(Studio* studio, int action_num, bool output){
     if (item){
         task_now = Task::SELL;
     }else{
         task_now = Task::BUY;
     }
     target = studio->id;
+    target_action_num = action_num;
     goToTargetStudio(studio, output);
 }
 
