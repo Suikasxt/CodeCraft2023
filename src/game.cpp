@@ -14,7 +14,7 @@ int moveTimePredict(Robot* robot){
         time += (angle_delta-1)/M_PI;
         angle_delta = 1;
     }
-    return int((time + angle_delta*0.4 + (map_num==3 ? 0.3 : 0)) * FRAME_PRE_SEC); //To be adjust
+    return int((time + angle_delta*0.4) * FRAME_PRE_SEC); //To be adjust
 }
 
 Game::Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money)
@@ -182,7 +182,7 @@ void Game::physicalSimulation(stack<int> robot_target_stack[4]){
                 //break;
                 delta_money = robot->update(studio_list, frameID);
                 money += delta_money;
-            }while(delta_money != 0);
+            }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top() != -1);
             //fprintf(stderr, "%d dispatch %d %d Money: %d\n", frameID, robot->id, robot->target, money);
         }
     }
@@ -262,7 +262,7 @@ void Game::greedyWork(double value_list[4][50]){
             }
             double dist = abs(robot->position - studio->position);
 
-            int space_left = (studio->item&robot->item) == 0;
+            double space_left = (studio->item&robot->item) == 0;
             space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && studio->finish==0 && studio->time_left < dist/6*FRAME_PRE_SEC);
             space_left -= sell_expect[studio->id][item_id];
             if (space_left > 0 && value_list == NULL){
@@ -270,22 +270,25 @@ void Game::greedyWork(double value_list[4][50]){
                 sell_expect[studio->id][item_id]++;
             }
             if (value_list){
-                value_list[robot->id][studio->id] = -(work->first) + min(space_left - 1, 0)*10000;
+                value_list[robot->id][studio->id] = -(work->first) + fmin(space_left - 1, 0)*10000;
             }
         }else{
             if (studio->type > 7){
                 continue;
             }
             double dist = abs(robot->position - studio->position);
-            int item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/6*FRAME_PRE_SEC);
+            double item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/6*FRAME_PRE_SEC);
             item_left -= buy_expect[studio->id];
+            if (studio->type <= 3){
+                item_left += 0.5;
+            }
             if (item_left > 0 && item_require[studio->type] > 0 && value_list == NULL){
                 robot->dispatch(studio);
                 buy_expect[studio->id]++;
                 item_require[studio->type]--;
             }
             if (value_list){
-                value_list[robot->id][studio->id] = -(work->first) + min(min(item_left - 1, item_require[studio->type] - 1), 0)*10000;
+                value_list[robot->id][studio->id] = -(work->first) + fmin(fmin(item_left - 1, item_require[studio->type] - 1), 0)*10000;
             }
         }
     }

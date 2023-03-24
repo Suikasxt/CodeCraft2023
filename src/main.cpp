@@ -239,11 +239,11 @@ void work(){
                 robot_target_real[robot->id].push_back(robot_target[robot->id]);
                 robot_target_stack[robot->id].pop();
                 robot->dispatch(&(studio_list[robot_target[robot->id]]), true);
-                break;//Not sure
+                //break;//Not sure
                 delta_money = robot->update(studio_list, frameID, true);
                 money += delta_money;
             }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top() != -1);
-            //fprintf(stderr, "%d item %d dispatch %d %d Money: %d\n", frameID, robot->item, robot->id, robot->target, money);
+            fprintf(stderr, "%d dispatch %d %d item %d Money: %d\n", frameID, robot->id, robot->target, robot->item, money);
         }
     }
     
