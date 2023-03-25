@@ -178,7 +178,6 @@ void search(int width, int time){
                     new_g->robot_list[i].task_now = Task::BUY;
                 }
                 new_g->robot_list[i].target = j;
-                new_g->robot_list[i].target_action_num = -1;
                 if (heap.push(new_g)){
                     new_g->road_id = road.size();
                     road.push_back(UpdateRoad(g->road_id, i, j, action_num[i]));
@@ -239,6 +238,9 @@ void work(){
         }
     }
     if (redesign){
+        for (int i = 0; i < 4; i++){
+            robot_list[i].target_action_num = -1;
+        }
         search(beam_width, 9000);
         last_design = frameID;
     }
@@ -447,6 +449,9 @@ int main(int argc, char *argv[]) {
         if (strcmp(argv[i], "-i") == 0){
             interval = atoi(argv[i+1]);
         }
+    }
+    if (calc_mode){
+        fprintf(stderr, "map %d bw %d k %d i %d\n", map_num, beam_width, search_width_K, interval);
     }
 
     readMap();
