@@ -27,9 +27,9 @@ bool pre_work = false;
 int map_num = 0;
 //本地计算的的时候主要关注下面每个多长时间重新计算，以及每次计算用多大的beam，上面search的部分扩展的宽度也是可以调的
 int interval = 500;
-int beam_width = 1000;
+int beam_width = 100;
 //每次选贪心策略分数最高的K个来扩展，也是计算的时候可以调的参数之一
-int search_width_K = 2; //2~5
+int search_width_K = 1; //2~5
 
 int time_count = 0;
 int total_time_count = 0;
@@ -178,6 +178,7 @@ void search(int width, int time){
                     new_g->robot_list[i].task_now = Task::BUY;
                 }
                 new_g->robot_list[i].target = j;
+                new_g->robot_list[i].target_action_num = -1;
                 if (heap.push(new_g)){
                     new_g->road_id = road.size();
                     road.push_back(UpdateRoad(g->road_id, i, j, action_num[i]));
