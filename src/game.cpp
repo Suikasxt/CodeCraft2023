@@ -42,10 +42,10 @@ void Game::calcValue(){
     }
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
         if (studio->finish){
-            value += (VALUE[studio->type] - COST[studio->type]) * 0.5;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.8;
         }
         if (studio->time_left != -1 && studio->type < 8 && studio->type > 3){
-            value += (VALUE[studio->type] - COST[studio->type]) * 0.3;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.8;
         }
     }
 }
@@ -224,6 +224,15 @@ void Game::greedyWork(double value_list[4][50]){
             continue;
         }
         for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
+            //针对地图设计!!!!!!!!
+            if (map_num == 1){
+                int disable[6] = {10, 11, 12, 21, 22, 23};
+                for (int j = 0; j < 6; j++){
+                    if (studio->id == j){
+                        continue;
+                    }
+                }
+            }
             double value = -abs(robot->position - studio->position) - robot->id*000;
             if (robot->item == 0 && studio->type <= 7){
                 value += item_require[studio->type] * 0.0005;

@@ -42,21 +42,28 @@ void Robot::outputToString(char output[]){
 void Robot::goToTargetStudio(Studio* studio, bool output){
     Point delta = studio->position - position;
     double target_angle = atan2(delta.y, delta.x);
-    double angle_delta = angleAdjust(target_angle - angle);
-    setAngleV(angle_delta*5, output);
-    /*double r = getRadius();
+    double angle_delta = angleAdjust(target_angle - angle - original_angle_v/FRAME_PRE_SEC);
+    double r = getRadius();
     double mass = M_PI * r * r * ROBOT_DENSITY;
     double inertia = mass * r * r / 2;
     double angle_v_a = ROBOT_MOMENT / inertia;
-    double angle_delta_after_stop = angle_delta - fabs(original_angle_v)/angle_v_a*original_angle_v;
-    if (fabs(angle_delta) < 0.1 && original_angle_v < 0.1){
-        setAngleV(angle_delta*10, output);
-    }else if (fabs(angle_delta_after_stop) < 0.1){
-        setAngleV(angle_delta_after_stop/2, output);
+    double angle_v_a_one_frame = angle_v_a/FRAME_PRE_SEC;
+    if (fabs(angle_delta) < 0.0001 && fabs(original_angle_v) < angle_v_a_one_frame){
+        setAngleV(angle_delta*FRAME_PRE_SEC, output);
+    }else if (fabs(angle_delta)*FRAME_PRE_SEC < angle_v_a_one_frame && fabs(angle_delta*FRAME_PRE_SEC - original_angle_v) < angle_v_a_one_frame){
+        setAngleV(angle_delta*FRAME_PRE_SEC, output);
     }else{
-        setAngleV(angle_delta_after_stop > 0 ? M_PI:-M_PI, output); 
-    }*/// To be upgrade
-
+        int step = int(fabs(original_angle_v)/angle_v_a_one_frame);
+        double angle_delta_after_stop = angle_delta - (original_angle_v/FRAME_PRE_SEC*step - step*step/2*angle_v_a_one_frame/FRAME_PRE_SEC);
+        if (fabs(angle_delta_after_stop)*FRAME_PRE_SEC < angle_v_a_one_frame){
+            setAngleV(0, output);
+        }else{
+            setAngleV(angle_delta_after_stop > 0 ? M_PI:-M_PI, output); 
+        }
+        //fprintf(warning_output, "%lf %lf %lf %lf\n", original_angle_v, angle_delta_after_stop, angle_delta, angle_v);
+    }// To be upgrade
+    //setAngleV(angle_delta*5, output);
+    
     double v = 0;
     if (fabs(angle_delta) < 1){
         v = 6;

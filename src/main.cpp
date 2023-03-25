@@ -232,7 +232,14 @@ void work(){
         if (robot->task_now == Task::WAIT){
             robot->task_now = Task::NONE;
         }
-        money += robot->update(studio_list, frameID, true);
+        if (robot->target != -1){
+            int real_action_num = studio_list[robot->target].action_num;
+            int delta_money = robot->update(studio_list, frameID, true);
+            if (delta_money){
+                (robot_target_real[robot->id].end()-1)->second = real_action_num;
+                money += delta_money;
+            }
+        }
         if (robot->task_now == Task::NONE && frameID > last_design + interval){
             redesign = true;
         }
@@ -262,8 +269,12 @@ void work(){
                 robot_target_stack[robot->id].pop();
                 robot->dispatch(&(studio_list[robot_target[robot->id]]), action_num, true);
                 //break;//Not sure
+                int real_action_num = robot_target_stack[robot->id].top().second;
                 delta_money = robot->update(studio_list, frameID, true);
-                money += delta_money;
+                if (delta_money){
+                    (robot_target_real[robot->id].end()-1)->second = real_action_num;
+                    money += delta_money;
+                }
             }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top().first != -1);
             fprintf(stderr, "%d dispatch %d %d action_num: %d item: %d Money: %d\n", frameID, robot->id, robot->target, robot->target_action_num, robot->item, money);
         }
