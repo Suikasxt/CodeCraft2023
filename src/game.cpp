@@ -42,10 +42,10 @@ void Game::calcValue(){
     }
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
         if (studio->finish){
-            value += (VALUE[studio->type] - COST[studio->type]) * 0.8;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.6;
         }
         if (studio->time_left != -1 && studio->type < 8 && studio->type > 3){
-            value += (VALUE[studio->type] - COST[studio->type]) * 0.8;
+            value += (VALUE[studio->type] - COST[studio->type]) * 0.3;
         }
     }
 }
@@ -225,6 +225,7 @@ void Game::greedyWork(double value_list[4][50]){
         }
         for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
             //针对地图设计!!!!!!!!
+            /*
             if (map_num == 1){
                 int disable[6] = {10, 11, 12, 21, 22, 23};
                 for (int j = 0; j < 6; j++){
@@ -233,11 +234,44 @@ void Game::greedyWork(double value_list[4][50]){
                     }
                 }
             }
+            */
             double value = -abs(robot->position - studio->position) - robot->id*000;
-            if (robot->item == 0 && studio->type <= 7){
-                value += item_require[studio->type] * 0.0005;
+            if (robot->item == 0 && studio->type <= 7 && studio->type > 3){
+                value += item_require[studio->type];
             }
             value -= (studio->type > 7)*100;
+            if (map_num == 1){
+                int item_num = 0;
+                for (int x = studio->item;x;x>>=1) item_num += x&1;
+                value += item_num * 2;
+                if ((robot->item|studio->item) == MATERIAL[studio->type]){
+                    value += 10;
+                }
+            }
+            if (map_num == 4){
+                int item_num = 0;
+                for (int x = studio->item;x;x>>=1) item_num += x&1;
+                value += item_num * 2;
+                if ((robot->item|studio->item) == MATERIAL[studio->type]){
+                    value += 3;
+                }
+                if (studio->id == 17){
+                    value += 30;
+                }
+                if (studio->type == 7){
+                    value += 30;
+                }
+                if (((1<<studio->type)&MATERIAL[4]) && ((1<<studio->type)&studio_list[17].item)==0){
+                    value += 5;
+                }
+            }else if (map_num == 2){
+                int item_num = 0;
+                for (int x = studio->item;x;x>>=1) item_num += x&1;
+                value += item_num * 2;
+                if ((robot->item|studio->item) == MATERIAL[studio->type]){
+                    value += 1;
+                }
+            }
             work_list.push_back(make_pair(-value, make_pair(&(*robot), &(*studio))));
         }
     }

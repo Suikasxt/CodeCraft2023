@@ -329,7 +329,7 @@ void work(){
         for (int add_frame = 0; add_frame <= SIM_FRAME_NUM; add_frame += 3){
             for (double add_pos_v = -2; add_pos_v <= 6+EPS; add_pos_v+=4){
                 for (double add_angle_v = -M_PI; add_angle_v <= M_PI+EPS; add_angle_v += M_PI_2){
-                    if (add_frame == 0 && abs(add_angle_v) > EPS){
+                    if (add_frame == 0 && abs(add_angle_v) > EPS && add_pos_v!=-2){
                         continue;
                     }
                     for (int j = 0; j < 4; j++){
@@ -464,9 +464,6 @@ int main(int argc, char *argv[]) {
             interval = atoi(argv[i+1]);
         }
     }
-    if (calc_mode){
-        fprintf(stderr, "map %d bw %d k %d i %d\n", map_num, beam_width, search_width_K, interval);
-    }
 
     readMap();
     stateOutput();
@@ -492,6 +489,9 @@ int main(int argc, char *argv[]) {
             }
             break;
         }
+    }
+    if (calc_mode){
+        fprintf(stderr, "map %d bw %d k %d i %d\n", map_num, beam_width, search_width_K, interval);
     }
 #ifdef DEBUG_MODE
     char file_name[100];
@@ -532,18 +532,22 @@ int main(int argc, char *argv[]) {
             angle = angle_now;
         }
     }
-    fprintf(warning_output, "\n\n\n\n");
-    fflush(warning_output);
+    fprintf(stderr, "\n");
+    if (calc_mode){
+        fprintf(stderr, "map %d bw %d k %d i %d\n", map_num, beam_width, search_width_K, interval);
+    }
+    fprintf(stderr, "\n");
+    fflush(stderr);
     for (int i = 0; i < 4; i++){
         stack<pair<int, int> > tmp(robot_target_stack[i]);
-        fprintf(warning_output, "{");
+        fprintf(stderr, "{");
         for (auto j = robot_target_real[i].begin(); j != robot_target_real[i].end(); j++){
-            fprintf(warning_output, "{%d, %d}, ", j->first, j->second);
+            fprintf(stderr, "{%d, %d}, ", j->first, j->second);
         } 
-        fprintf(warning_output, "-1},\n");
+        fprintf(stderr, "-1},\n");
     }
-    fprintf(warning_output, "\n\n\n\n");
-    fflush(warning_output);
+    fprintf(stderr, "\n\n");
+    fflush(stderr);
 #endif
 #ifdef DEBUG_MODE
     fflush(warning_output);
