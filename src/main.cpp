@@ -272,7 +272,7 @@ void work(){
                 robot_target_stack[robot->id].pop();
                 robot->dispatch(&(studio_list[robot_target[robot->id]]), action_num, true);
                 //break;//Not sure
-                int real_action_num = robot_target_stack[robot->id].top().second;
+                int real_action_num = studio_list[robot->target].action_num;
                 delta_money = robot->update(studio_list, frameID, true);
                 if (delta_money){
                     (robot_target_real[robot->id].end()-1)->second = real_action_num;
