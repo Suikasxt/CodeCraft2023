@@ -253,6 +253,9 @@ void work(){
     }
 
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
+        if (robot->task_now == Task::STOP){
+            continue;
+        }
         if (robot->task_now != Task::NONE){
             robot->goToTargetStudio(&(studio_list[robot->target]), true);
         }else if (robot_target_stack[robot->id].empty() || robot_target_stack[robot->id].top().first==-1){
@@ -276,7 +279,7 @@ void work(){
                     money += delta_money;
                 }
             }while(delta_money != 0 && robot_target_stack[robot->id].empty() == false && robot_target_stack[robot->id].top().first != -1);
-            fprintf(stderr, "%d dispatch %d %d action_num: %d item: %d Money: %d\n", frameID, robot->id, robot->target, robot->target_action_num, robot->item, money);
+            //fprintf(stderr, "%d dispatch %d %d action_num: %d item: %d Money: %d\n", frameID, robot->id, robot->target, robot->target_action_num, robot->item, money);
         }
     }
     
