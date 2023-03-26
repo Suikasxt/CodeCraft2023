@@ -65,14 +65,14 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
     //setAngleV(angle_delta*5, output);
     
     double v = 0;
-    if (fabs(angle_delta) < 1){
+    if (fabs(angle_delta) < 1.1){
         v = 6;
         if (abs(delta) < 1){
             v = 1;
         }
         if (studio->action_num < target_action_num){
-            if (abs(delta) < 0.8){
-                v = -2;
+            if (abs(delta) < 0.4){
+                v = 0;
             }
         }
     }
