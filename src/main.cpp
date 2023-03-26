@@ -544,7 +544,7 @@ int main(int argc, char *argv[]) {
         for (auto j = robot_target_real[i].begin(); j != robot_target_real[i].end(); j++){
             fprintf(stderr, "{%d, %d}, ", j->first, j->second);
         } 
-        fprintf(stderr, "-1},\n");
+        fprintf(stderr, "{-1, -1}},\n");
     }
     fprintf(stderr, "\n\n");
     fflush(stderr);

@@ -32,7 +32,7 @@ void Game::calcValue(){
             int item_id = 0;
             for (int x=(robot->item>>1); x; x>>=1) item_id++;
             robot->flushTimeS(frameID);
-            value += (VALUE[item_id] + COST[item_id])/2 * robot->time_s * robot->collision_s;
+            value += VALUE[item_id] * robot->time_s * robot->collision_s;
         }
         if (robot->target != -1){
             value -= abs(robot->position - studio_list[robot->target].position);
@@ -41,7 +41,7 @@ void Game::calcValue(){
         }
     }
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
-        if (studio->finish){
+        if (studio->finish && studio->type > 3){
             value += (VALUE[studio->type] - COST[studio->type]) * 0.6;
         }
         if (studio->time_left != -1 && studio->type < 8 && studio->type > 3){
@@ -243,7 +243,7 @@ void Game::greedyWork(double value_list[4][50]){
             if (map_num == 1){
                 int item_num = 0;
                 for (int x = studio->item;x;x>>=1) item_num += x&1;
-                value += item_num * 2;
+                value += item_num * 3;
                 if ((robot->item|studio->item) == MATERIAL[studio->type]){
                     value += 10;
                 }
@@ -251,7 +251,7 @@ void Game::greedyWork(double value_list[4][50]){
             if (map_num == 4){
                 int item_num = 0;
                 for (int x = studio->item;x;x>>=1) item_num += x&1;
-                value += item_num * 2;
+                value += item_num * 3;
                 if ((robot->item|studio->item) == MATERIAL[studio->type]){
                     value += 3;
                 }
@@ -264,7 +264,8 @@ void Game::greedyWork(double value_list[4][50]){
                 if (((1<<studio->type)&MATERIAL[4]) && ((1<<studio->type)&studio_list[17].item)==0){
                     value += 5;
                 }
-            }else if (map_num == 2){
+            }
+            if (map_num == 2){
                 int item_num = 0;
                 for (int x = studio->item;x;x>>=1) item_num += x&1;
                 value += item_num * 2;

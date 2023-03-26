@@ -68,10 +68,7 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
     if (fabs(angle_delta) < 1){
         v = 6;
         if (abs(delta) < 1){
-            v = 1.5;
-        }
-        if (abs(delta) < 0.4){
-            v = 0;
+            v = 1;
         }
         if (studio->action_num < target_action_num){
             if (abs(delta) < 0.8){
