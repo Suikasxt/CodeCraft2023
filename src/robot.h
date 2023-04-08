@@ -18,6 +18,7 @@ public:
     int data_frameID;
     int pick_up_time;
     int target;
+    int next_target;
     int target_action_num;
     Task task_now;
     double time_s;
@@ -25,9 +26,12 @@ public:
     double angle;
     double angle_v;
     double original_angle_v;
+    double position_v;
     Point position;
     Point velocity;
     Point original_velocity;
+
+    Point additional_target_position;
 
     int last_target;
 
@@ -42,7 +46,10 @@ public:
     int buy(vector<Studio>& studio_list, int frameID, bool output = false);
     int sell(vector<Studio>& studio_list, int frameID, bool output = false);
     void destroy();
+    
+    void goToTargetPosition(Point target, bool output=false);
     void goToTargetStudio(Studio* studio, bool output=false);
+    void goToTargetPath(vector<pair<int, int>> &path, bool output=false);
     
     int update(vector<Studio>& studio_list, int frameID, bool output = false);
     void dispatch(Studio* studio, int action_num, bool output = false);

@@ -2,6 +2,7 @@
 #include "main.h"
 #include <stdio.h>
 #include <math.h>
+#include "map.h"
 
 const double ROBOT_DENSITY = 20;
 const double ROBOT_FORCE = 250;
@@ -38,11 +39,17 @@ void Robot::outputToString(char output[]){
             id, studio_id, item, time_s, collision_s, angle, original_angle_v, position.x, position.y, velocity.x, velocity.y, task_now, target);
 }
 
-
-void Robot::goToTargetStudio(Studio* studio, bool output){
-    Point delta = studio->position - position;
+void Robot::goToTargetPosition(Point target, bool output){
+    Point delta = target - position;
     double target_angle = atan2(delta.y, delta.x);
     double angle_delta = angleAdjust(target_angle - angle - original_angle_v/FRAME_PRE_SEC);
+
+    bool reverse = false;
+    if (abs(delta) < 2 && abs(angle_delta) > 2.5){
+    //    angle_delta = angleAdjust(angle_delta + M_PI);
+    //    reverse = true;
+    }
+
     double r = getRadius();
     double mass = M_PI * r * r * ROBOT_DENSITY;
     double inertia = mass * r * r / 2;
@@ -62,22 +69,63 @@ void Robot::goToTargetStudio(Studio* studio, bool output){
         }
         //fprintf(warning_output, "%lf %lf %lf %lf\n", original_angle_v, angle_delta_after_stop, angle_delta, angle_v);
     }// To be upgrade
-    //setAngleV(angle_delta*5, output);
+    //setAngleV(angle_delta*3, output);
     
     double v = 0;
-    if (fabs(angle_delta) < 1.1){
+    if (fabs(angle_delta) < 0.4){
         v = 6;
-        if (abs(delta) < 1){
-            v = 1;
+        if (abs(delta) < 0.2){
+            v = 2;
         }
-        if (studio->action_num < target_action_num){
-            if (abs(delta) < 0.4){
+        /*if (studio->action_num < target_action_num){
+            if (abs(delta) < 0.2){
                 v = 0;
             }
+        }*/
+        if (reverse){
+            v = -2;
         }
     }
 
     setVelocity(v, output);
+
+#ifdef DEBUG_MODE
+    if (output)
+    fprintf(warning_output, "%d pos: %lf %lf, angle:%lf %lf  (%lf, %lf)  (%lf, %lf)\n", id, abs(delta), position_v, angle_delta, angle_v, position.x, position.y, target.x, target.y);
+#endif
+}
+
+void Robot::goToTargetPath(vector<pair<int, int>> &path, bool output){
+    int j = 0;
+    for (int i = 20; i>=0; i--){
+        if (j + (1<<i) < path.size() && DirectWalk(RADIUS[item>0], position, Discrete2Continuous(path[j+(1<<i)]))){
+            j += 1<<i;
+        }
+    }
+    pair<int, int> target_position_coord = path[j];
+    
+    Point target_position = Discrete2Continuous(target_position_coord);
+    goToTargetPosition(target_position, output);
+}
+
+void Robot::goToTargetStudio(Studio* studio, bool output){
+    pair<int, int> coord = Continuous2DiscreteRound(position);
+    
+    pair<int, int> target = map_target[item>0][studio->id][coord.first][coord.second];
+    vector<pair<int, int>> path;
+    path.push_back(target);
+    while(target != map_target[item>0][studio->id][target.first][target.second]){
+        target = map_target[item>0][studio->id][target.first][target.second];
+        path.push_back(target);
+    }
+    if (output){
+#ifdef DEBUG_MODE
+        pair<int, int> coord = Continuous2DiscreteRound(position);
+        Point now_d = Discrete2Continuous(coord);
+        fprintf(warning_output, "%d %d now: (%lf, %lf) dist: %lf\n", id, studio->id, now_d.x, now_d.y, map_dist[item>0][studio->id][coord.first][coord.second]);
+#endif
+    }
+    goToTargetPath(path, output);
 }
 
 void Robot::stop(){
@@ -187,7 +235,8 @@ int Robot::update(vector<Studio> &studio_list, int frameID, bool output){
     if (task_now == Task::BUY && target_studio->finish == 0){
         return money;
     }
-    if (task_now == Task::BUY && studio_id == target_studio->id){
+    //fprintf(warning_output, "%d r_pos: (%lf %lf) s_pos:(%lf %lf) t:(%lf %lf)\n", id, position.x, position.y, target_studio->position.x, target_studio->position.y, additional_target_position.x, additional_target_position.y);
+    if (task_now == Task::BUY && studio_id == target_studio->id && (abs(position - additional_target_position) < 0.015 || abs(target_studio->position - additional_target_position) < 0.1)){
         money += buy(studio_list, frameID, output);
         if (money){
             task_now = Task::NONE;
@@ -262,15 +311,15 @@ void Robot::dispatch(Studio* studio, int action_num, bool output){
 
 void Robot::setAngleV(double _angle_v, bool output){
     angle_v = _angle_v;
-    if (angle_v > M_PI){
-        angle_v = M_PI;
+    if (angle_v > M_PI - EPS){
+        angle_v = M_PI - EPS;
     }
-    if (angle_v < -M_PI){
-        angle_v = -M_PI;
+    if (angle_v < -M_PI + EPS){
+        angle_v = -M_PI + EPS;
     }
     //fprintf(stderr, "%d %lf\n", id, angle_v);
     if (output){
-        printf("rotate %d %lf\n", id, angle_v);
+        printf("rotate %d %.10lf\n", id, angle_v);
     }
 }
 void Robot::setVelocity(double v, bool output){
@@ -280,6 +329,7 @@ void Robot::setVelocity(double v, bool output){
     if (v <= -2){
         v = -2;
     }
+    position_v = v;
     velocity = Point(cos(angle), sin(angle))*v;
     if (output){
         printf("forward %d %lf\n", id, v);
@@ -287,7 +337,7 @@ void Robot::setVelocity(double v, bool output){
 }
 
 double Robot::getRadius(){
-    return item? 0.53: 0.45;
+    return RADIUS[item>0];
 }
 
 

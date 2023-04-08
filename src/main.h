@@ -13,11 +13,10 @@ using namespace std;
 #endif
 #define FRAME_PRE_SEC 50
 #define INF 1e9
-#define EPS 1e-9
+#define EPS 1e-5
 
 extern vector<Studio> studio_list;
 extern vector<Robot> robot_list;
-extern vector<Studio*> studio_dict[10];
 extern FILE* warning_output;
 extern int money;
 extern int frameID;
