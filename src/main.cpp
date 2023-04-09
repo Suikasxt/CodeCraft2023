@@ -545,7 +545,7 @@ void greedyWork(){
                 if (robot_list[i].target != -1){
                     cost = map_dist[robot_list[i].item>0][robot_list[i].target][pos.first][pos.second] - map_dist[robot_list[i].item>0][robot_list[i].target][coord.first][coord.second];
                 }
-                cost += f*0.2;
+                cost += f*0.4;
                 cost += (SIM_TIME - road_occu[pos.first][pos.second]) * 1000;
                 if (cost < extra_cost[i]){
                     target = pos;
