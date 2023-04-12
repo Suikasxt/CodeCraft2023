@@ -200,7 +200,7 @@ void Game::greedyWork(double value_list[4][50]){
         robot->update(studio_list, frameID);
     }
     double item_require[8]={};
-    const double item_value[10]={0, 0, 0, 0, 6, 6, 6, 10, 0, 0};
+    double item_value[10]={0, 0, 0, 0, 6, 6, 6, 10, 0, 0};
     for (auto studio = studio_list.begin(); studio != studio_list.end(); studio++){
         for (int i = 1; i <= 7; i++){
             if (((MATERIAL[studio->type]^studio->item)>>i)&1){
@@ -262,6 +262,7 @@ void Game::greedyWork(double value_list[4][50]){
                 if ((robot->item|studio->item) == MATERIAL[studio->type]){
                     value += 4 * item_value[studio->type];
                 }
+                value += item_value[studio->type] * 10;
                 value += item_require[studio->type] * item_value[studio->type] * 5;
                 work_list.push_back(make_pair(-value, make_pair(&(*robot), make_pair(&(*studio), &(*studio)))));
             }
@@ -298,6 +299,8 @@ void Game::greedyWork(double value_list[4][50]){
                 if ((robot->item|studio->item) == MATERIAL[studio->type]){
                     value += 4 * item_value[studio->type];
                 }
+                value += item_value[studio->type] * 10;
+                value += item_value[next_studio->type] * 10;
                 value += item_require[next_studio->type] * item_value[next_studio->type] * 5;
                 work_list.push_back(make_pair(-value, make_pair(&(*robot), make_pair(&(*studio), &(*next_studio)))));
             }

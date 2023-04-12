@@ -449,9 +449,24 @@ void greedyWork(){
             }
         }
     }
-
     const int SIM_TIME = 50;
     double r[4];
+    
+    for (int i = 0; i < 4; i++)
+    if (path[i].size()){
+        r[i] = robot_list[i].getRadius();
+        Robot* robot = &(robot_list[i]);
+        int l = 0;
+        for (int j = 20; j>=0; j--){
+            if (l + (1<<j) < path[i].size() && DirectWalk(r[i], robot->position, path[i][l+(1<<j)])){
+                l += 1<<j;
+            }
+        }
+        Point target_position = path[i][l];
+        robot_list[i].goToTargetPosition(target_position, true);
+        robot_list[i].target_angle_future = robot_list[i].angle_v;
+    }
+
     
 
     //核心的回避算法
@@ -459,7 +474,6 @@ void greedyWork(){
     int avoid[4] = {};
     for (int t = 0; t < 3; t++){
         for (int i = 0; i < 4; i++){
-            r[i] = robot_list[i].getRadius();
             if (path[i].size())
             for (int j = 0; j < SIM_TIME && path[i].size() < SIM_TIME; j++){
                 path[i].push_back(path[i][path[i].size()-1]);
@@ -631,6 +645,12 @@ void greedyWork(){
         }
         Point target_position = path[i][l];
         robot_list[i].goToTargetPosition(target_position, true);
+        if (abs(robot_list[i].position - target_position) < 0.01){
+            //fprintf(stderr, "%d %lf\n", i, robot_list[i].target_angle_future);
+            robot_list[i].setAngleV(robot_list[i].target_angle_future, true);
+        }
+    }else{
+        robot_list[i].setAngleV(robot_list[i].target_angle_future);
     }
 
     //加这个是实现等别的机器人回避的时候不要撞上去
@@ -645,6 +665,20 @@ void greedyWork(){
             robot_list[i].setVelocity(-2, true);
         }
     }
+    /*for (int i = 0; i < 4; i++)
+    if (robot_list[i].position_v > 2){
+        Point next_pos = robot_list[i].position + Point(cos(robot_list[i].angle), sin(robot_list[i].angle))*0.3;
+        pair<int, int> coord = Continuous2DiscreteRound(next_pos);
+        
+        for (int dx = -6; dx < 6; dx++)
+        for (int dy = -6; dy < 6; dy++){
+            int x = coord.first + dx;
+            int y = coord.second + dy;
+            if (isBlock(x, y) && abs(Discrete2Continuous(make_pair(x, y)) - next_pos) < r[i]){
+                robot_list[i].setVelocity(2, true);
+            }
+        }
+    }*/
     //DWACollisionAvoid();
 }
 
@@ -676,6 +710,7 @@ int main(int argc, char *argv[]) {
         if (studio_list.size() == MAP_FEATURE[i][0] && studio_list[0].type == MAP_FEATURE[i][1] && studio_list[1].type == MAP_FEATURE[i][2]){
             map_num = i+1;
             //这个开关用来切换计算模式还是推理模式，break开了就是本地计算，最后会打一个结果到warning.txt，从里面把数据贴到data.h就可以
+            break;
 #ifdef _LOCAL
             if (calc_mode){
                 break;

@@ -22,6 +22,7 @@ public:
     int target_action_num;
     Task task_now;
     double time_s;
+    double target_angle_future;
     double collision_s;
     double angle;
     double angle_v;

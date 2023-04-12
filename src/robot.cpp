@@ -74,8 +74,10 @@ void Robot::goToTargetPosition(Point target, bool output){
     double v = 0;
     if (fabs(angle_delta) < 0.4){
         v = 6;
-        if (abs(delta) < 0.2){
-            v = 2;
+        if (item){
+            v = min(v, abs(delta) * 5);
+        }else{
+            v = min(v, abs(delta) * 12);
         }
         /*if (studio->action_num < target_action_num){
             if (abs(delta) < 0.2){

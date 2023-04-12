@@ -29,8 +29,8 @@ int PRE_WORK_DATA[PRE_WORK_MAP_NUM][4][WORK_LIST_LENGTH][2] = {
 };
 
 int MAP_FEATURE[PRE_WORK_MAP_NUM][3] = {
-    {43, 1, 5}, // MAP 1
-    {25, 6, 5}, // MAP 2
+    {9, 2, 1}, // MAP 1
+    {27, 8, 1}, // MAP 2
     {50, 3, 5}, // MAP 3
     {18, 7, 1}, // MAP 4
 };

@@ -302,13 +302,13 @@ void mapInit(){
     }
 
 #ifdef DEBUG_MODE
-    for (int i = 50*MAP_SCALE-1; i >= 0; i--){
+    /*for (int i = 50*MAP_SCALE-1; i >= 0; i--){
         for (int j = 0; j < 50*MAP_SCALE; j++){
             fprintf(warning_output, "%d", block_nearby_4[j][i]);
         }
         fprintf(warning_output, "\n");
         fflush(warning_output);
-    }
+    }*/
 #endif
 }
 void readMap(){
