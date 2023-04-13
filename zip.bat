@@ -13,4 +13,4 @@ if "%curtime:~0,1%"==" " set curtime=%curtime:~1%&&goto delleft
 
 set filename=src-%curtime%.zip
 echo %filename%
-%zip_exe% c %code_zip_dir%/%filename% ./src/*h ./src/*cpp ./src/CMakeLists.txt
+%zip_exe% c %code_zip_dir%/%filename% ./src/*.h ./src/*.cpp ./src/CMakeLists.txt
