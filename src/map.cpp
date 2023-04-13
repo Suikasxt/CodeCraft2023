@@ -322,8 +322,8 @@ void readMap(){
     robot_list.clear();
     
     // orangesheee 修改，读入标识队伍的字段进行判断
-    char team[4];
-    fgets(team,sizeof(team)+1,stdin);
+    char team[10];
+    scanf("%s", team);
     is_red = team[0]=='R';
 
     for (int i = 99; i >= 0; i--){
@@ -352,6 +352,5 @@ void readMap(){
     int t_end = clock();
     fprintf(stderr, "%lf\n", 1.*(t_end - t_start)/CLOCKS_PER_SEC);
     //debug_output = true;
-    //fprintf(stderr, "%d\n", DirectWalkWeak(0, Continuous2DiscreteRound(Point(28.750000, 18.000000)), Continuous2DiscreteRound(Point(29.000000, 27.000000))));
     //assert(1.*(t_end - t_start)/CLOCKS_PER_SEC < 5);
 }
