@@ -7,7 +7,8 @@
 const double ROBOT_DENSITY = 20;
 const double ROBOT_FORCE = 250;
 const double ROBOT_MOMENT = 50;
-
+// orangesheee 修改
+const double MAX_V = is_red?7:6;
 Robot::Robot(int _id, Point _position)
 :id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
     data_frameID = 0;
@@ -73,7 +74,7 @@ void Robot::goToTargetPosition(Point target, bool output){
     
     double v = 0;
     if (fabs(angle_delta) < 0.4){
-        v = 6;
+        v = MAX_V;
         if (item){
             v = fmin(v, abs(delta) * 5);
         }else{
@@ -325,8 +326,8 @@ void Robot::setAngleV(double _angle_v, bool output){
     }
 }
 void Robot::setVelocity(double v, bool output){
-    if (v >= 6){
-        v = 6;
+    if (v >= MAX_V){
+        v = MAX_V;
     }
     if (v <= -2){
         v = -2;

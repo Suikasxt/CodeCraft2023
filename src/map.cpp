@@ -5,6 +5,11 @@
 #include <queue>
 #include <ctime>
 
+// orangesheee 修改，增加了对决赛不同地图的支持，判断红蓝方
+bool is_red = false;
+char robot_syms[] ={'A','B'};
+char studio_syms[] = {'0','a'};
+
 bool debug_output = false;
 bool block[50*MAP_SCALE][50*MAP_SCALE];
 bool block_nearby_4[50*MAP_SCALE+1][50*MAP_SCALE+1];
@@ -316,14 +321,19 @@ void readMap(){
     studio_list.clear();
     robot_list.clear();
     
+    // orangesheee 修改，读入标识队伍的字段进行判断
+    char team[4];
+    fgets(team,sizeof(team)+1,stdin);
+    is_red = team[0]=='R';
+
     for (int i = 99; i >= 0; i--){
         scanf("%s", map[i]);
         for (int j = 0; j < 100; j++){
-            if (map[i][j] == 'A'){
+            if (map[i][j] == robot_syms[int(is_red)]){
                 int id = robot_list.size();
                 robot_list.push_back(Robot(id, Point(j+0.5, i+0.5)*0.5));
             }
-            else if (map[i][j] >= '1' && map[i][j] <= '9'){
+            else if (map[i][j] >= studio_syms[int(is_red)] && map[i][j] <= studio_syms[int(is_red)]+8){
                 int id = studio_list.size();
                 studio_list.push_back(Studio(id, map[i][j]-'0', Point(j+0.5, i+0.5)*0.5));
             }

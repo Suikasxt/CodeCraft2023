@@ -40,7 +40,7 @@ void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
 
-    char line[1024];
+    char line[40960];
     for (int i = 0; i < nof_studio; i++){
         fgets(line, sizeof(line), stdin);
         studio_list[i].readFromString(line);
@@ -60,6 +60,10 @@ void readUntilOK(){
         arr_list[i].push_back(make_pair(robot_list[i].studio_id, frameID));
     }
 
+    // orangesheee 修改，增加对雷达信息的过滤。
+    for (int i=0 ; i<4;i++){
+        fgets(line,sizeof(line)+1,stdin);
+    }
 
     scanf("%s", line);
     assert(line[0] == 'O' && line[1] == 'K');

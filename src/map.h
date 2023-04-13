@@ -8,6 +8,8 @@
 #define BLOCK_RANGE_LIMIT_D BLOCK_RANGE_LIMIT*MAP_SCALE
 using namespace std;
 
+// orangesheee 修改
+extern bool is_red;
 extern bool block[50*MAP_SCALE][50*MAP_SCALE];
 extern bool block_nearby_4[50*MAP_SCALE+1][50*MAP_SCALE+1];
 extern const double RADIUS[2];
