@@ -5,6 +5,9 @@
 #include <ctime>
 #include "map.h"
 
+//orangesheee 修改
+const int MAX_FRAME=12000;
+
 //给简化版模拟器也就是passTime函数用，预测一个机器人要多长时间到达目标工作台
 int moveTimePredict(Robot* robot){
     Studio* studio = &(studio_list[robot->target]);
@@ -252,7 +255,7 @@ void Game::greedyWork(double value_list[4][50]){
                 double dist = map_dist[1][studio->id][coord_robot.first][coord_robot.second];
                 double value = -dist;
                 value += 1e7;
-                if (dist/5*FRAME_PRE_SEC + frameID > 15000){
+                if (dist/5*FRAME_PRE_SEC + frameID > MAX_FRAME){
                     value -= 1e6;
                 }
                 value -= ((studio->type > 8) && (robot->item != (1<<7)))*10000;
@@ -284,7 +287,7 @@ void Game::greedyWork(double value_list[4][50]){
                 
                 double dist = map_dist[0][studio->id][coord_robot.first][coord_robot.second] + studio_dist[studio->id][next_studio->id];
                 double value = -dist;
-                if (dist/5*FRAME_PRE_SEC + frameID > 15000){
+                if (dist/5*FRAME_PRE_SEC + frameID > MAX_FRAME){
                     continue;
                 }
                 value -= ((next_studio->type > 8) && (studio->type != 7))*10000;
