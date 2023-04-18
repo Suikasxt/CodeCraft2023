@@ -34,6 +34,22 @@ public:
 
     Point additional_target_position;
 
+    //角度pid算法
+    double pid_p_angle;
+    double pid_i_angle;
+    double pid_d_angle;
+    double kp_angle;
+    double ki_angle;
+    double kd_angle;
+
+    //距离pid算法
+    double pid_p_v;
+    double pid_i_v;
+    double pid_d_v;
+    double kp_v;
+    double ki_v;
+    double kd_v;
+
     int last_target;
 
     double additional_angle_v;

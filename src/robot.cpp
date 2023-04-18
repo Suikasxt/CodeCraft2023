@@ -20,6 +20,22 @@ Robot::Robot(int _id, Point _position)
     original_angle_v = 0;
     additional_frame_num = 0;
     target_action_num = -1;
+
+    //pid参数初始化
+    pid_p_angle =0;
+    pid_i_angle =0;
+    pid_d_angle =0;
+    kp_angle = 10;
+    ki_angle = 0.002;
+    kd_angle = 2;
+
+    pid_p_v =0;
+    pid_i_v =0;
+    pid_d_v =0;
+    kp_v = 10;
+    ki_v = 0.2;
+    kd_v = 2;
+
 };
 
 void Robot::readFromString(char input[])
@@ -56,41 +72,35 @@ void Robot::goToTargetPosition(Point target, bool output){
     double inertia = mass * r * r / 2;
     double angle_v_a = ROBOT_MOMENT / inertia;
     double angle_v_a_one_frame = angle_v_a/FRAME_PRE_SEC;
-    if (fabs(angle_delta) < 0.0001 && fabs(original_angle_v) < angle_v_a_one_frame){
-        setAngleV(angle_delta*FRAME_PRE_SEC, output);
-    }else if (fabs(angle_delta)*FRAME_PRE_SEC < angle_v_a_one_frame && fabs(angle_delta*FRAME_PRE_SEC - original_angle_v) < angle_v_a_one_frame){
-        setAngleV(angle_delta*FRAME_PRE_SEC, output);
-    }else{
-        int step = int(fabs(original_angle_v)/angle_v_a_one_frame);
-        double angle_delta_after_stop = angle_delta - (original_angle_v/FRAME_PRE_SEC*step - step*step/2*angle_v_a_one_frame/FRAME_PRE_SEC);
-        if (fabs(angle_delta_after_stop)*FRAME_PRE_SEC < angle_v_a_one_frame){
-            setAngleV(0, output);
-        }else{
-            setAngleV(angle_delta_after_stop > 0 ? M_PI:-M_PI, output); 
-        }
-        //fprintf(warning_output, "%lf %lf %lf %lf\n", original_angle_v, angle_delta_after_stop, angle_delta, angle_v);
-    }// To be upgrade
-    //setAngleV(angle_delta*3, output);
-    
-    double v = 0;
+
+    pid_i_angle += angle_delta;
+    pid_d_angle = angle_delta-pid_p_angle;
+    pid_p_angle = angle_delta;
+    double angle_output = kp_angle*pid_p_angle+ki_angle*pid_i_angle+kd_angle*pid_d_angle;
+    setAngleV(angle_output,output);
+
+    // if (fabs(angle_delta) < 0.0001 && fabs(original_angle_v) < angle_v_a_one_frame){
+    //     setAngleV(angle_delta*FRAME_PRE_SEC, output);
+    // }else if (fabs(angle_delta)*FRAME_PRE_SEC < angle_v_a_one_frame && fabs(angle_delta*FRAME_PRE_SEC - original_angle_v) < angle_v_a_one_frame){
+    //     setAngleV(angle_delta*FRAME_PRE_SEC, output);
+    // }else{
+    //     int step = int(fabs(original_angle_v)/angle_v_a_one_frame);
+    //     double angle_delta_after_stop = angle_delta - (original_angle_v/FRAME_PRE_SEC*step - step*step/2*angle_v_a_one_frame/FRAME_PRE_SEC);
+    //     if (fabs(angle_delta_after_stop)*FRAME_PRE_SEC < angle_v_a_one_frame){
+    //         setAngleV(0, output);
+    //     }else{
+    //         setAngleV(angle_delta_after_stop > 0 ? M_PI:-M_PI, output); 
+    //     }
+    // }
+    double v_output = 0;
     if (fabs(angle_delta) < 0.4){
-        v = MAX_V;
-        if (item){
-            v = fmin(v, abs(delta) * 5);
-        }else{
-            v = fmin(v, abs(delta) * 12);
-        }
-        /*if (studio->action_num < target_action_num){
-            if (abs(delta) < 0.2){
-                v = 0;
-            }
-        }*/
-        if (reverse){
-            v = -2;
-        }
+        pid_i_v += abs(delta);
+        pid_d_v = abs(delta)-pid_p_v-0.4;
+        pid_p_v = abs(delta)-0.4;
+        v_output = kp_v*pid_p_v+ki_v*pid_i_v+kd_v*pid_d_v;   
     }
 
-    setVelocity(v, output);
+    setVelocity(v_output, output);
 
 #ifdef DEBUG_MODE
     if (output)
