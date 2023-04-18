@@ -320,11 +320,6 @@ void readMap(){
     int t_start = clock();
     studio_list.clear();
     robot_list.clear();
-    
-    // orangesheee 修改，读入标识队伍的字段进行判断
-    char team[10];
-    scanf("%s", team);
-    is_red = team[0]=='R';
 
     for (int i = 99; i >= 0; i--){
         scanf("%s", map[i]);

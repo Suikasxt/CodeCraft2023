@@ -7,8 +7,7 @@
 const double ROBOT_DENSITY = 20;
 const double ROBOT_FORCE = 250;
 const double ROBOT_MOMENT = 50;
-// orangesheee 修改
-const double MAX_V = is_red?7:6;
+const double MAX_SPEED[2] = {6, 7};
 Robot::Robot(int _id, Point _position)
 :id(_id),position(_position),task_now(NONE),target(-1),last_target(-1){
     data_frameID = 0;
@@ -46,10 +45,10 @@ void Robot::goToTargetPosition(Point target, bool output){
     double angle_delta = angleAdjust(target_angle - angle - original_angle_v/FRAME_PRE_SEC);
 
     bool reverse = false;
-    if (abs(delta) < 2 && abs(angle_delta) > 2.5){
-    //    angle_delta = angleAdjust(angle_delta + M_PI);
-    //    reverse = true;
-    }
+    /*if (abs(delta) < 2 && abs(angle_delta) > 2.5){
+        angle_delta = angleAdjust(angle_delta + M_PI);
+        reverse = true;
+    }*/
 
     double r = getRadius();
     double mass = M_PI * r * r * ROBOT_DENSITY;
@@ -74,7 +73,7 @@ void Robot::goToTargetPosition(Point target, bool output){
     
     double v = 0;
     if (fabs(angle_delta) < 0.4){
-        v = MAX_V;
+        v = MAX_SPEED[is_red];
         if (item){
             v = fmin(v, abs(delta) * 5);
         }else{
@@ -326,8 +325,8 @@ void Robot::setAngleV(double _angle_v, bool output){
     }
 }
 void Robot::setVelocity(double v, bool output){
-    if (v >= MAX_V){
-        v = MAX_V;
+    if (v >= MAX_SPEED[is_red]){
+        v = MAX_SPEED[is_red];
     }
     if (v <= -2){
         v = -2;
@@ -335,6 +334,9 @@ void Robot::setVelocity(double v, bool output){
     position_v = v;
     velocity = Point(cos(angle), sin(angle))*v;
     if (output){
+#ifdef DEBUG_MODE
+        fprintf(warning_output, "set speed %lf on Robot %d\n", v, id);
+#endif
         printf("forward %d %lf\n", id, v);
     }
 }
