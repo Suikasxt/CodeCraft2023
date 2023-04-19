@@ -1,0 +1,26 @@
+{
+    "files.associations": {
+        "vector": "cpp",
+        "utility": "cpp",
+        "cmath": "cpp",
+        "system_error": "cpp",
+        "type_traits": "cpp",
+        "xlocnum": "cpp",
+        "xtr1common": "cpp",
+        "cstdlib": "cpp",
+        "cassert": "cpp",
+        "iostream": "cpp",
+        "exception": "cpp",
+        "tuple": "cpp",
+        "queue": "cpp",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp",
+        "algorithm": "cpp",
+        "stack": "cpp",
+        "xlocale": "cpp",
+        "ctime": "cpp"
+    },
+    "cmake.sourceDirectory": "${workspaceFolder}/src"
+}
