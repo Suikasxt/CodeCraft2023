@@ -8,7 +8,7 @@
 // orangesheee 修改，增加了对决赛不同地图的支持，判断红蓝方
 bool is_red = false;
 char robot_syms[] ={'A','B'};
-char studio_syms[] = {'0','a'};
+char studio_syms[] = {'1','a'};
 
 bool debug_output = false;
 bool block[50*MAP_SCALE][50*MAP_SCALE];
@@ -311,7 +311,7 @@ void readMap(){
             }
             else if (map[i][j] >= studio_syms[int(is_red)] && map[i][j] <= studio_syms[int(is_red)]+8){
                 int id = studio_list.size();
-                studio_list.push_back(Studio(id, map[i][j]-'0', Point(j+0.5, i+0.5)*0.5));
+                studio_list.push_back(Studio(id, map[i][j]-studio_syms[int(is_red)]+1, Point(j+0.5, i+0.5)*0.5));
             }
             else if (map[i][j] == '#'){
                 for (int dx = 0; dx <= 2; dx++)
