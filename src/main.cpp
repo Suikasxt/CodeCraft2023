@@ -6,7 +6,6 @@
 #include <cstring>
 #include <algorithm>
 #include "main.h"
-#include "heap.h"
 #include <stack>
 #include "data.h"
 #include <string.h>
@@ -29,6 +28,7 @@ bool pre_work = false;
 bool greedy_work = true;
 int map_num = 0;
 
+char team[10];
 int time_count = 0;
 int total_time_count = 0;
 void readUntilOK(){
@@ -55,9 +55,53 @@ void readUntilOK(){
         arr_list[i].push_back(make_pair(robot_list[i].studio_id, frameID));
     }
 
-    // orangesheee 修改，增加对雷达信息的过滤。
-    for (int i=0 ; i<4;i++){
-        fgets(line,sizeof(line)+1,stdin);
+    vector<pair<int, int>> new_block_list;
+    for (int x = 0; x < 50*MAP_SCALE; x++)
+    for (int y = 0; y < 50*MAP_SCALE; y++){
+        if (new_block[x][y]){
+            new_block_list.push_back(make_pair(x, y));
+        }
+    }
+
+    for (int i = 0; i < 4; i++){
+        for (int j = 0; j < 360; j++){
+            scanf("%lf", robot_list[i].radar+j);
+        }
+        for (int l = 0; l < new_block_list.size(); l++){
+            if (new_block_list[l].first < 0){
+                continue;
+            }
+            Point block_pos = Discrete2Continuous(new_block_list[l]);
+            Point delta = block_pos - robot_list[i].position;
+            double angle = atan2(delta.y, delta.x);
+            double delta_angle = angleAdjust(angle - robot_list[i].angle);
+            if (delta_angle < 0){
+                delta_angle +=2*M_PI;
+            }
+            int j = round(delta_angle/M_PI*180);
+            if (robot_list[i].radar[j] > abs(delta) - 0.05){
+                new_block[new_block_list[l].first][new_block_list[l].second] = 0;
+                new_block_list[l] = make_pair(-1, -1);
+            }
+        }
+        for (int j = 0; j < 360; j++){
+            double angle = (M_PI*j/180) + robot_list[i].angle;
+            Point block_pos = Point(cos(angle), sin(angle)) * robot_list[i].radar[j] + robot_list[i].position;
+            pair<int, int> coord = Continuous2DiscreteRound(block_pos);
+            if (isBlock(coord.first, coord.second)){
+                continue;
+            }
+            bool is_my_robot = false;
+            for (int k = 0; k < 4 && !is_my_robot; k++){
+                if (abs(block_pos - robot_list[k].position) < robot_list[k].getRadius() + EPS + 0.01){
+                    is_my_robot = true;
+                }
+            }
+            if (is_my_robot){
+                continue;
+            }
+            new_block[coord.first][coord.second] = true;
+        }
     }
 
     scanf("%s", line);
@@ -73,7 +117,7 @@ void stateOutput(){
 
     char file_name[100];
     char str[1000];
-    sprintf(file_name, "./debug/%d.txt", frameID);
+    sprintf(file_name, "./debug/%d_%s.txt", frameID, team);
     FILE* file = fopen(file_name, "w");
 
     fprintf(file, "**********output studio\n");
@@ -372,7 +416,6 @@ void greedyWork(){
 }
 
 int main(int argc, char *argv[]) {
-    char team[10];
     scanf("%s", team);
     is_red = team[0]=='R';
 

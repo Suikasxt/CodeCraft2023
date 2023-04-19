@@ -11,6 +11,7 @@ using namespace std;
 // orangesheee 修改
 extern bool is_red;
 extern bool block[50*MAP_SCALE][50*MAP_SCALE];
+extern bool new_block[50*MAP_SCALE][50*MAP_SCALE];
 extern bool block_nearby_4[50*MAP_SCALE+1][50*MAP_SCALE+1];
 extern const double RADIUS[2];
 extern pair<int, int> map_target[2][50][50*MAP_SCALE][50*MAP_SCALE];

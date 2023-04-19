@@ -31,6 +31,7 @@ public:
     Point position;
     Point velocity;
     Point original_velocity;
+    double radar[360];
 
     Point additional_target_position;
 

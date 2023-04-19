@@ -12,6 +12,7 @@ char studio_syms[] = {'0','a'};
 
 bool debug_output = false;
 bool block[50*MAP_SCALE][50*MAP_SCALE];
+bool new_block[50*MAP_SCALE][50*MAP_SCALE];
 bool block_nearby_4[50*MAP_SCALE+1][50*MAP_SCALE+1];
 bool block_nearby_4_4[50*MAP_SCALE+1][50*MAP_SCALE+1];
 double nearest_block[200][200];
@@ -21,7 +22,6 @@ Point studio_dist_addition[50][50];
 const double RADIUS[2] = {0.45, 0.53};
 const int DIRECTION[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
 pair<int, int> map_target[2][50][50*MAP_SCALE][50*MAP_SCALE];
-pair<int, int> map_target_walkable[2][50][50*MAP_SCALE][50*MAP_SCALE];
 double map_dist[2][50][50*MAP_SCALE][50*MAP_SCALE];
 /*pair<int, int> Continuous2Discrete(Point a){
     return make_pair(int(a.x*MAP_SCALE+EPS), int(a.y*MAP_SCALE+EPS));
@@ -62,7 +62,7 @@ bool isBlock(int x, int y){
     if (y < 0 || y >= 50*MAP_SCALE){
         return true;
     }
-    return block[x][y];
+    return block[x][y] || new_block[x][y];
 }
 bool isBlock(pair<int, int> a){
     return isBlock(a.first, a.second);
@@ -205,25 +205,6 @@ void roadSearch(int o, int studio_id){
             }
             map_dist[o][studio_id][x][y] = dist_now;
             map_target[o][studio_id][x][y] = now;
-            /*if (DirectWalkWeak(o, next, map_target_walkable[o][studio_id][now.first][now.second])){
-                map_target_walkable[o][studio_id][x][y] = map_target_walkable[o][studio_id][now.first][now.second];
-            }else{
-                map_target_walkable[o][studio_id][x][y] = now;
-            }
-            pair<int, int> pre = map_target_walkable[o][studio_id][x][y];
-            vector<pair<int, int>> path;
-            while(pre != map_target_walkable[o][studio_id][now.first][now.second]){
-                pre = map_target[o][studio_id][pre.first][pre.second];
-                path.push_back(pre);
-            }
-            int j = -1;
-            for (int i = 20; i>=0; i--){
-                if (j + (1<<i) < path.size() && DirectWalkWeak(o, next, path[j+(1<<i)])){
-                    j += 1<<i;
-                    map_target_walkable[o][studio_id][x][y] = path[j];
-                }
-            }
-            path.clear();*/
             if (walk_available[o][x][y] == false){
                 continue;
             }

@@ -29,12 +29,7 @@ public:
 
 
     Game(vector<Studio> &_studio_list, vector<Robot> &_robot_list, int _frameID, int _money);
-    void calcValue();
-    int nextTimeStep();
-    void passTime(int time);
     void greedyWork(double value_list[4][50] = NULL);
-    void physicalSimulation(stack<pair<int, int> > robot_target_stack[4]);
-    int MCTS(int robot_id);
 };
 
 #endif
