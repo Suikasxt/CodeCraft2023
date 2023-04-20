@@ -16,12 +16,14 @@ using namespace std;
 #define EPS 1e-5
 
 extern vector<Studio> studio_list;
+extern vector<Studio> enemy_studio_list;
 extern vector<Robot> robot_list;
 extern FILE* warning_output;
 extern int money;
 extern int frameID;
 extern char map[110][110];
 extern int map_num;
+
 
 
 #pragma GCC optimize("Ofast")

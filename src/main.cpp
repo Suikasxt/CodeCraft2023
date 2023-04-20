@@ -12,8 +12,12 @@
 #include <stdlib.h>
 #include "map.h"
 #include <queue>
+#include <pthread.h>
+#include <atomic>
+#include <unistd.h>
 
 vector<Studio> studio_list;
+vector<Studio> enemy_studio_list;
 vector<Robot> robot_list;
 FILE* warning_output;
 int money = 200000;
@@ -28,9 +32,33 @@ bool pre_work = false;
 bool greedy_work = true;
 int map_num = 0;
 
+
+bool new_block_main[50*MAP_SCALE][50*MAP_SCALE];
+double map_dist_main[2][50][50*MAP_SCALE][50*MAP_SCALE];
+pair<int, int> map_target_main[2][50][50*MAP_SCALE][50*MAP_SCALE];
+bool walk_available_main[2][50*MAP_SCALE][50*MAP_SCALE];
+double studio_dist_main[50][50];
+Point studio_dist_addition_main[50][50];
+
+
 char team[10];
 int time_count = 0;
 int total_time_count = 0;
+
+pthread_t search_thread;
+std::atomic<bool> roadSearching(false);
+
+
+void* searchThread(void* args){
+    int time_to_sleep = 10; //ms
+    while(frameID < 12000){
+        while(roadSearching.load() == false){
+            usleep(time_to_sleep*1000); //sleep 10ms
+        }
+        mapInit();
+        roadSearching.store(false);
+    }
+}
 void readUntilOK(){
     int nof_studio;
     scanf("%d %d\n", &money, &nof_studio);
@@ -58,7 +86,7 @@ void readUntilOK(){
     vector<pair<int, int>> new_block_list;
     for (int x = 0; x < 50*MAP_SCALE; x++)
     for (int y = 0; y < 50*MAP_SCALE; y++){
-        if (new_block[x][y]){
+        if (new_block_main[x][y]){
             new_block_list.push_back(make_pair(x, y));
         }
     }
@@ -80,17 +108,14 @@ void readUntilOK(){
             }
             int j = round(delta_angle/M_PI*180);
             if (robot_list[i].radar[j] > abs(delta) - 0.05){
-                new_block[new_block_list[l].first][new_block_list[l].second] = 0;
+                new_block_main[new_block_list[l].first][new_block_list[l].second] = false;
                 new_block_list[l] = make_pair(-1, -1);
             }
         }
         for (int j = 0; j < 360; j++){
             double angle = (M_PI*j/180) + robot_list[i].angle;
             Point block_pos = Point(cos(angle), sin(angle)) * robot_list[i].radar[j] + robot_list[i].position;
-            pair<int, int> coord = Continuous2DiscreteRound(block_pos);
-            if (isBlock(coord.first, coord.second)){
-                continue;
-            }
+            pair<int, int> coord = Continuous2Discrete(block_pos);
             bool is_my_robot = false;
             for (int k = 0; k < 4 && !is_my_robot; k++){
                 if (abs(block_pos - robot_list[k].position) < robot_list[k].getRadius() + EPS + 0.01){
@@ -100,10 +125,16 @@ void readUntilOK(){
             if (is_my_robot){
                 continue;
             }
-            new_block[coord.first][coord.second] = true;
+            for (int x = coord.first; x < coord.first + 2; x++)
+            for (int y = coord.second; y < coord.second + 2; y++){
+                if (isBlock(x, y)){
+                    continue;
+                }
+                new_block_main[x][y] = true;
+            }
         }
     }
-
+    //studio_list = enemy_studio_list;
     scanf("%s", line);
     assert(line[0] == 'O' && line[1] == 'K');
 }
@@ -147,7 +178,29 @@ void OutputPath(vector<Point> path[4]){
     }
 #endif
 }
+
+
 void greedyWork(){
+    if (roadSearching.load() == false){
+        memcpy(map_dist_main, map_dist, sizeof(map_dist));
+        memcpy(map_target_main, map_target, sizeof(map_target));
+        memcpy(walk_available_main, walk_available, sizeof(walk_available));
+        memcpy(studio_dist_main, studio_dist, sizeof(studio_dist));
+        memcpy(studio_dist_addition_main, studio_dist_addition, sizeof(studio_dist_addition));
+        
+
+        memcpy(new_block, new_block_main, sizeof(new_block));
+#ifdef DEBUG_MODE
+    for (int i = 50*MAP_SCALE-1; i >= 0; i--){
+        for (int j = 0; j < 50*MAP_SCALE; j++){
+            fprintf(warning_output, "%d", isBlock(j, i));
+        }
+        fprintf(warning_output, "\n");
+        fflush(warning_output);
+    }
+#endif
+        roadSearching.store(true);
+    }
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         money += robot->update(studio_list, frameID, true);
         //robot->task_now = Task::NONE;
@@ -168,10 +221,10 @@ void greedyWork(){
     for (auto robot = robot_list.begin(); robot != robot_list.end(); robot++){
         if (robot->target != -1){
             pair<int, int> coord = Continuous2DiscreteRound(robot->position);
-            pair<int, int> target = map_target[robot->item>0][robot->target][coord.first][coord.second];
+            pair<int, int> target = map_target_main[robot->item>0][robot->target][coord.first][coord.second];
             path[robot->id].push_back(Discrete2Continuous(target));
-            while(target != map_target[robot->item>0][robot->target][target.first][target.second]){
-                target = map_target[robot->item>0][robot->target][target.first][target.second];
+            while(target != map_target_main[robot->item>0][robot->target][target.first][target.second]){
+                target = map_target_main[robot->item>0][robot->target][target.first][target.second];
                 path[robot->id].push_back(Discrete2Continuous(target));
             }
             if (robot->item == 0){
@@ -287,7 +340,7 @@ void greedyWork(){
 #endif
                 double cost = -INF;
                 if (robot_list[i].target != -1){
-                    cost = map_dist[robot_list[i].item>0][robot_list[i].target][pos.first][pos.second] - map_dist[robot_list[i].item>0][robot_list[i].target][coord.first][coord.second];
+                    cost = map_dist_main[robot_list[i].item>0][robot_list[i].target][pos.first][pos.second] - map_dist_main[robot_list[i].item>0][robot_list[i].target][coord.first][coord.second];
                 }
                 cost += f*0.1;
                 cost += (SIM_TIME - road_occu[pos.first][pos.second]) * 1000;
@@ -304,7 +357,7 @@ void greedyWork(){
                     int x = pos.first + DIRECTION[d][0];
                     int y = pos.second + DIRECTION[d][1];
                     pair<int, int> next = make_pair(x, y);
-                    if (isBlock(x, y) || !walk_available[robot_list[i].item>0][x][y]){
+                    if (isBlock(x, y) || !walk_available_main[robot_list[i].item>0][x][y]){
                         continue;
                     }
                     if (pre[x][y].first != -1){
@@ -425,6 +478,7 @@ int main(int argc, char *argv[]) {
     warning_output = fopen(file_name, "w");
 #endif
     readMap();
+    pthread_create(&search_thread, 0, searchThread, 0);
     stateOutput();
     puts("OK");
     fflush(stdout);

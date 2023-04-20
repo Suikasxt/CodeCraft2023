@@ -81,11 +81,11 @@ void Game::greedyWork(double value_list[4][50]){
                 if ((MATERIAL[studio->type]&robot->item) == 0){
                     continue;
                 }
-                if (map_dist[1][studio->id][coord_robot.first][coord_robot.second] >= INF){
+                if (map_dist_main[1][studio->id][coord_robot.first][coord_robot.second] >= INF){
                     continue;
                 }
                 
-                double dist = map_dist[1][studio->id][coord_robot.first][coord_robot.second];
+                double dist = map_dist_main[1][studio->id][coord_robot.first][coord_robot.second];
                 double value = -dist;
                 value += 1e7;
                 if (dist/5*FRAME_PRE_SEC + frameID > MAX_FRAME){
@@ -111,19 +111,18 @@ void Game::greedyWork(double value_list[4][50]){
                 if ((MATERIAL[next_studio->type]&PRODUCT[studio->type]) == 0){
                     continue;
                 }
-                if (map_dist[0][studio->id][coord_robot.first][coord_robot.second] >= INF){
+                if (map_dist_main[0][studio->id][coord_robot.first][coord_robot.second] >= INF){
                     continue;
                 }
-                if (studio_dist[studio->id][next_studio->id] >= INF){
+                if (studio_dist_main[studio->id][next_studio->id] >= INF){
                     continue;
                 }
                 
-                double dist = map_dist[0][studio->id][coord_robot.first][coord_robot.second] + studio_dist[studio->id][next_studio->id];
-                double value = -dist;
+                double dist = map_dist_main[0][studio->id][coord_robot.first][coord_robot.second] + studio_dist_main[studio->id][next_studio->id];
                 if (dist/5*FRAME_PRE_SEC + frameID > MAX_FRAME){
                     continue;
                 }
-                dist += studio_dist[studio->id][next_studio->id];
+                dist += studio_dist_main[studio->id][next_studio->id];
                 double value = -dist;
                 for (int j = 1; j <= 6; j++)
                 if (sell_expect[studio->id][j]){
@@ -162,7 +161,7 @@ void Game::greedyWork(double value_list[4][50]){
         if (robot->item){
             int item_id = 0;
             for (int x=(robot->item>>1); x; x>>=1) item_id++;
-            double dist = map_dist[0][studio->id][coord_robot.first][coord_robot.second];
+            double dist = map_dist_main[0][studio->id][coord_robot.first][coord_robot.second];
 
             double space_left = (studio->item&robot->item) == 0;
             space_left += (studio->item==MATERIAL[studio->type]) && (studio->time_left!=-1 && (next_studio->finish==0 || buy_expect[next_studio->id]) && studio->time_left < dist/5*FRAME_PRE_SEC+50);
@@ -176,14 +175,14 @@ void Game::greedyWork(double value_list[4][50]){
             }
         }else{
             pair<int, int> coord_studio = Continuous2DiscreteRound(studio->position);
-            double dist = map_dist[0][studio->id][coord_robot.first][coord_robot.second];
+            double dist = map_dist_main[0][studio->id][coord_robot.first][coord_robot.second];
             double item_left = int(studio->finish) + int(studio->time_left!=-1 && studio->time_left < dist/5*FRAME_PRE_SEC+50);
             item_left -= buy_expect[studio->id];
             if (studio->type <= 3){
                 item_left += 1;
             }
             
-            dist += studio_dist[studio->id][next_studio->id];
+            dist += studio_dist_main[studio->id][next_studio->id];
             double space_left = (next_studio->item&PRODUCT[studio->type]) == 0;
             space_left += (next_studio->item==MATERIAL[next_studio->type]) && (next_studio->time_left!=-1 && (next_studio->finish==0 || buy_expect[next_studio->id]) && next_studio->time_left < dist/5*FRAME_PRE_SEC+50);
             space_left -= sell_expect[next_studio->id][studio->type];
@@ -191,7 +190,7 @@ void Game::greedyWork(double value_list[4][50]){
             if (item_left > 0 && space_left > 0 && value_list == NULL){
                 robot->dispatch(studio, -1);
                 robot->next_target = next_studio->id;
-                robot->additional_target_position = studio_dist_addition[studio->id][next_studio->id];
+                robot->additional_target_position = studio_dist_addition_main[studio->id][next_studio->id];
                 buy_expect[studio->id]++;
                 sell_expect[next_studio->id][studio->type]++;
             }

@@ -113,18 +113,18 @@ void Robot::goToTargetPath(vector<pair<int, int>> &path, bool output){
 void Robot::goToTargetStudio(Studio* studio, bool output){
     pair<int, int> coord = Continuous2DiscreteRound(position);
     
-    pair<int, int> target = map_target[item>0][studio->id][coord.first][coord.second];
+    pair<int, int> target = map_target_main[item>0][studio->id][coord.first][coord.second];
     vector<pair<int, int>> path;
     path.push_back(target);
-    while(target != map_target[item>0][studio->id][target.first][target.second]){
-        target = map_target[item>0][studio->id][target.first][target.second];
+    while(target != map_target_main[item>0][studio->id][target.first][target.second]){
+        target = map_target_main[item>0][studio->id][target.first][target.second];
         path.push_back(target);
     }
     if (output){
 #ifdef DEBUG_MODE
         pair<int, int> coord = Continuous2DiscreteRound(position);
         Point now_d = Discrete2Continuous(coord);
-        fprintf(warning_output, "%d %d now: (%lf, %lf) dist: %lf\n", id, studio->id, now_d.x, now_d.y, map_dist[item>0][studio->id][coord.first][coord.second]);
+        fprintf(warning_output, "%d %d now: (%lf, %lf) dist: %lf\n", id, studio->id, now_d.x, now_d.y, map_dist_main[item>0][studio->id][coord.first][coord.second]);
 #endif
     }
     goToTargetPath(path, output);

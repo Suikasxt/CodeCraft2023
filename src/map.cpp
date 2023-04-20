@@ -23,9 +23,10 @@ const double RADIUS[2] = {0.45, 0.53};
 const int DIRECTION[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
 pair<int, int> map_target[2][50][50*MAP_SCALE][50*MAP_SCALE];
 double map_dist[2][50][50*MAP_SCALE][50*MAP_SCALE];
-/*pair<int, int> Continuous2Discrete(Point a){
+
+pair<int, int> Continuous2Discrete(Point a){
     return make_pair(int(a.x*MAP_SCALE+EPS), int(a.y*MAP_SCALE+EPS));
-}*/
+}
 pair<int, int> Continuous2DiscreteRound(Point a){
     return make_pair(int(a.x*MAP_SCALE+0.5), int(a.y*MAP_SCALE+0.5));
 }
@@ -287,19 +288,11 @@ void mapInit(){
         }
     }
 
-#ifdef DEBUG_MODE
-    /*for (int i = 50*MAP_SCALE-1; i >= 0; i--){
-        for (int j = 0; j < 50*MAP_SCALE; j++){
-            fprintf(warning_output, "%d", block_nearby_4[j][i]);
-        }
-        fprintf(warning_output, "\n");
-        fflush(warning_output);
-    }*/
-#endif
 }
 void readMap(){
     int t_start = clock();
     studio_list.clear();
+    enemy_studio_list.clear();
     robot_list.clear();
 
     for (int i = 99; i >= 0; i--){
@@ -312,6 +305,10 @@ void readMap(){
             else if (map[i][j] >= studio_syms[int(is_red)] && map[i][j] <= studio_syms[int(is_red)]+8){
                 int id = studio_list.size();
                 studio_list.push_back(Studio(id, map[i][j]-studio_syms[int(is_red)]+1, Point(j+0.5, i+0.5)*0.5));
+            }
+            else if (map[i][j] >= studio_syms[int(is_red^1)] && map[i][j] <= studio_syms[int(is_red^1)]+8){
+                int id = enemy_studio_list.size();
+                enemy_studio_list.push_back(Studio(id, map[i][j]-studio_syms[int(is_red^1)]+1, Point(j+0.5, i+0.5)*0.5));
             }
             else if (map[i][j] == '#'){
                 for (int dx = 0; dx <= 2; dx++)
