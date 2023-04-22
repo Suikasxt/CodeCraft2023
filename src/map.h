@@ -28,6 +28,7 @@ extern Point studio_dist_addition_main[50][50];
 
 void readMap();
 bool isBlock(int x, int y);
+bool isBlockOld(int x, int y);
 pair<int, int> Continuous2Discrete(Point a);
 pair<int, int> Continuous2DiscreteRound(Point a);
 Point Discrete2Continuous(pair<int, int> a);

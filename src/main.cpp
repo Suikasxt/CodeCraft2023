@@ -50,13 +50,14 @@ std::atomic<bool> roadSearching(false);
 
 
 void* searchThread(void* args){
-    int time_to_sleep = 10; //ms
+    int time_to_sleep = 100; //ms
     while(frameID < 12000-1){
         while(roadSearching.load() == false){
             usleep(time_to_sleep*1000); //sleep 10ms
         }
         mapInit();
         roadSearching.store(false);
+        usleep(1000*1000);
     }
 }
 void readUntilOK(){
@@ -123,6 +124,16 @@ void readUntilOK(){
                 }
             }
             if (is_my_robot){
+                continue;
+            }
+            bool is_block = false;
+            for (int x = coord.first; x < coord.first + 2; x++)
+            for (int y = coord.second; y < coord.second + 2; y++){
+                if (isBlockOld(x, y)){
+                    is_block = true;
+                }
+            }
+            if (is_block){
                 continue;
             }
             for (int x = coord.first; x < coord.first + 2; x++)
@@ -435,8 +446,6 @@ void greedyWork(){
             //fprintf(stderr, "%d %lf\n", i, robot_list[i].target_angle_future);
             robot_list[i].setAngleV(robot_list[i].target_angle_future, true);
         }
-    }else{
-        robot_list[i].setAngleV(robot_list[i].target_angle_future);
     }
 
     //加这个是实现等别的机器人回避的时候不要撞上去

@@ -23,6 +23,8 @@ const double RADIUS[2] = {0.45, 0.53};
 const int DIRECTION[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {-1, -1}, {1, -1}, {-1, 1}, {1, 1}};
 pair<int, int> map_target[2][50][50*MAP_SCALE][50*MAP_SCALE];
 double map_dist[2][50][50*MAP_SCALE][50*MAP_SCALE];
+pair<int, int> map_target_enemy[2][50][50*MAP_SCALE][50*MAP_SCALE];
+double map_dist_enemy[2][50][50*MAP_SCALE][50*MAP_SCALE];
 
 pair<int, int> Continuous2Discrete(Point a){
     return make_pair(int(a.x*MAP_SCALE+EPS), int(a.y*MAP_SCALE+EPS));
@@ -56,6 +58,15 @@ double pointToBlock(Point p, int x, int y){
     return pointToBlock(p, Discrete2Continuous(make_pair(x, y)));
 }
 */
+bool isBlockOld(int x, int y){
+    if (x < 0 || x >= 50*MAP_SCALE){
+        return true;
+    }
+    if (y < 0 || y >= 50*MAP_SCALE){
+        return true;
+    }
+    return block[x][y];
+}
 bool isBlock(int x, int y){
     if (x < 0 || x >= 50*MAP_SCALE){
         return true;
