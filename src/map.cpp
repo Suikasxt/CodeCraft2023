@@ -313,6 +313,7 @@ void readMap(){
             else if (map[i][j] == '#'){
                 for (int dx = 0; dx <= 2; dx++)
                 for (int dy = 0; dy <= 2; dy++)
+                if (!isBlock(j*2+dx, i*2+dy))
                 block[j*2+dx][i*2+dy] = true;
             }
         }

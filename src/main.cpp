@@ -51,7 +51,7 @@ std::atomic<bool> roadSearching(false);
 
 void* searchThread(void* args){
     int time_to_sleep = 10; //ms
-    while(frameID < 12000){
+    while(frameID < 12000-1){
         while(roadSearching.load() == false){
             usleep(time_to_sleep*1000); //sleep 10ms
         }
@@ -499,6 +499,7 @@ int main(int argc, char *argv[]) {
         stateOutput();
         fflush(stdout);
     }
+    pthread_join(search_thread, 0);
 #ifdef DEBUG_MODE
     fflush(warning_output);
 #endif
